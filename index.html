@@ -50,7 +50,7 @@ select.contract{background:var(--panel2);color:var(--fg);border:1px solid var(--
 .wlhd em{font-style:normal;font-size:10px;color:var(--muted)}
 .wlcol{display:flex;justify-content:space-between;padding:4px 10px;font-family:var(--cond);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--grid)}
 #wlist{flex:1;overflow-y:auto}
-.wrow{position:relative;display:grid;grid-template-columns:26px 1fr auto;gap:0 8px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--grid);cursor:pointer;border-left:2px solid transparent}
+.wrow{position:relative;display:grid;grid-template-columns:1fr auto;gap:0 8px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--grid);cursor:pointer;border-left:2px solid transparent}
 .wrow:hover{background:#111114}.wrow.on{background:#16161b;border-left-color:var(--amber)}
 .wico{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-family:var(--cond);font-weight:700;font-size:10px;color:#000;grid-row:span 2}
 .wtk{font-weight:600;font-size:12.5px;color:var(--fg)}.wnm{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -509,7 +509,7 @@ let WL=["COMEX:GC1!","COMEX:SI1!","COMEX:HG1!","NYMEX:CL1!","ICEEUR:BRN1!","TVC:
 const saveWL=()=>{try{localStorage.setItem("t568-wl",JSON.stringify(WL))}catch(e){}};
 function quote(sy){const R=rng(sy.id+"q"),pct=(R()-.5)*.07,prev=sy.px/(1+pct);return{px:sy.px,ch:sy.px-prev,pct:pct*100}}
 function renderWL(){$("#wlist").innerHTML=WL.map(id=>{const sy=SYM.find(s=>s.id===id);if(!sy)return"";const qt=quote(sy),f=dp(sy.px),cl=qt.ch>=0?"up":"down",tk=sy.id.split(":")[1];
-  return `<div class="wrow${sy.id===sym.id?' on':''}" data-wl="${sy.id}" role="button" tabindex="0"><span class="wico" style="background:${WLC[sy.root]||'#888'}">${sy.root.slice(0,3)}</span><span class="wtk">${tk}</span><span class="wpx num">${qt.px.toFixed(f)}</span><span class="wnm">${sy.name.split(" · ")[0]}</span><span class="wch num ${cl}">${qt.ch>=0?'+':''}${qt.ch.toFixed(f)} ${qt.pct>=0?'+':''}${qt.pct.toFixed(2)}%</span><button class="wx" data-wx="${sy.id}" title="Bỏ khỏi bảng giá" aria-label="Bỏ ${tk}">×</button></div>`}).join("")||'<div class="empty">Bảng giá trống.</div>';
+  return `<div class="wrow${sy.id===sym.id?' on':''}" data-wl="${sy.id}" role="button" tabindex="0"><span class="wtk" title="${sy.id} · ${sy.name}">${tk}</span><span class="wpx num">${qt.px.toFixed(f)}</span><span></span><span class="wch num ${cl}">${qt.ch>=0?'+':''}${qt.ch.toFixed(f)} ${qt.pct>=0?'+':''}${qt.pct.toFixed(2)}%</span><button class="wx" data-wx="${sy.id}" title="Bỏ khỏi bảng giá" aria-label="Bỏ ${tk}">×</button></div>`}).join("")||'<div class="empty">Bảng giá trống.</div>';
   $("#wlist").querySelectorAll("[data-wl]").forEach(r=>{const go=()=>{sym=SYM.find(s=>s.id===r.dataset.wl);open=open.slice(0,1);renderAll()};r.onclick=e=>{if(e.target.closest("[data-wx]"))return;go()};r.onkeydown=e=>{if(e.key==="Enter")go()}});
   $("#wlist").querySelectorAll("[data-wx]").forEach(b=>b.onclick=()=>{WL=WL.filter(x=>x!==b.dataset.wx);saveWL();renderWL()})}
 function wlSearch(){const t=$("#wlq").value.trim().toUpperCase(),m=SYM.filter(s=>!WL.includes(s.id)&&(!t||s.id.includes(t)||s.root.includes(t)||s.name.toUpperCase().includes(t)));
