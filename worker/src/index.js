@@ -356,10 +356,13 @@ export default {
         if (!(await isAuthed(env, req))) return json({ error: "Cần đăng nhập" }, 401, cors);
         const syms = String(url.searchParams.get("symbols") || "").toUpperCase().split(",").map((s) => s.trim()).filter(Boolean).slice(0, 40);
         const quotes = {};
+        // symbols=* trả về mọi mã đang có giá gửi về.
         if (syms.length) {
-          const { results } = await env.DB.prepare(
-            `SELECT symbol, t, c, dv, pc FROM quotes WHERE symbol IN (${syms.map(() => "?").join(",")})`
-          ).bind(...syms).all();
+          const all = syms.includes("*");
+          const { results } = await (all
+            ? env.DB.prepare(`SELECT symbol, t, c, dv, pc FROM quotes`)
+            : env.DB.prepare(`SELECT symbol, t, c, dv, pc FROM quotes WHERE symbol IN (${syms.map(() => "?").join(",")})`).bind(...syms)
+          ).all();
           for (const q of results) quotes[q.symbol] = { t: q.t, c: q.c, dv: q.dv, pc: q.pc };
         }
         return json({ quotes }, 200, cors);
