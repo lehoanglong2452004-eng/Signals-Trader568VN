@@ -44,6 +44,22 @@ select.contract{background:var(--panel2);color:var(--fg);border:1px solid var(--
 .ichip[aria-pressed="false"]{color:var(--muted)}
 
 .term{display:flex;gap:0;margin-top:6px;height:max(660px,calc(100vh - 130px))}
+.wl{flex:0 0 232px;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);margin-right:6px;min-width:0;overflow:hidden}
+.wlhd{display:flex;align-items:baseline;justify-content:space-between;padding:8px 10px 6px;border-bottom:1px solid var(--line)}
+.wlhd span{font-family:var(--cond);font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--amber)}
+.wlhd em{font-style:normal;font-size:10px;color:var(--muted)}
+.wlcol{display:flex;justify-content:space-between;padding:4px 10px;font-family:var(--cond);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--grid)}
+#wlist{flex:1;overflow-y:auto}
+.wrow{position:relative;display:grid;grid-template-columns:26px 1fr auto;gap:0 8px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--grid);cursor:pointer;border-left:2px solid transparent}
+.wrow:hover{background:#111114}.wrow.on{background:#16161b;border-left-color:var(--amber)}
+.wico{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-family:var(--cond);font-weight:700;font-size:10px;color:#000;grid-row:span 2}
+.wtk{font-weight:600;font-size:12.5px;color:var(--fg)}.wnm{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wpx{text-align:right;font-size:12.5px}.wch{text-align:right;font-size:10.5px;white-space:nowrap}
+.wx{position:absolute;left:1px;top:1px;background:none;border:0;color:var(--muted);cursor:pointer;font-size:12px;line-height:1;padding:2px;display:none}.wrow:hover .wx{display:block}.wx:hover{color:var(--sell)}
+.wlft{padding:8px 10px;font-size:12px;color:var(--amber);border:0;border-top:1px solid var(--line);background:none;text-align:left;cursor:pointer;font-family:var(--cond);font-weight:700;letter-spacing:.04em}.wlft:hover{background:#111114}
+.wladd{border-top:1px solid var(--line);padding:6px;display:flex;flex-direction:column;gap:4px;max-height:240px}
+.wladd input{background:var(--bg);border:1px solid var(--line);padding:5px 8px;color:var(--amber);font-size:12px;text-transform:uppercase}.wladd input::placeholder{text-transform:none;color:var(--muted)}
+#wlres{overflow-y:auto}#wlres button{display:flex;justify-content:space-between;gap:8px;width:100%;background:none;border:0;border-bottom:1px solid var(--grid);padding:5px 4px;color:var(--fg);cursor:pointer;font-size:11.5px;text-align:left}#wlres button:hover{background:#16161b}#wlres em{font-style:normal;color:var(--muted);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chartbox{flex:1 1 auto;min-width:420px;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line)}
 .tvbar{display:flex;align-items:center;gap:2px;padding:3px 6px;border-bottom:1px solid var(--line);flex-wrap:wrap;position:relative}
 .tvbar .sym{color:var(--amber);font-weight:500;padding:3px 8px 3px 2px;border-right:1px solid var(--line);margin-right:4px}
@@ -167,6 +183,7 @@ body.resizing{user-select:none}
 @media (max-width:1100px){
   .term{flex-direction:column;height:auto}
   .chartbox{min-width:0;height:560px;flex:none}
+  .wl{flex:none;margin:0 0 6px;max-height:260px}
   .cols{max-width:100%;height:640px}
   .col{flex-basis:min(340px,86vw)}
 }
@@ -196,6 +213,7 @@ body.resizing{user-select:none}
 <div class="picker" id="picker"></div>
 
 <div class="term">
+  <aside class="wl" aria-label="Bảng giá"><div class="wlhd"><span>Bảng giá</span><em>giá mẫu</em></div><div class="wlcol"><span>Mã</span><span>Giá · thay đổi</span></div><div id="wlist"></div><div class="wladd" id="wladd" hidden><input id="wlq" autocomplete="off" placeholder="Gõ mã: HG, ZS, XAUUSD..." aria-label="Tìm mã để thêm"><div id="wlres"></div></div><button class="wlft" id="wlplus" title="Thêm mã vào bảng giá">+ Thêm mã</button></aside>
   <section class="chartbox" aria-label="Chart">
     <div class="tvbar">
       <span class="sym" id="tvSym">COMEX:GC1!</span>
@@ -235,6 +253,7 @@ body.resizing{user-select:none}
       <li>Trang có mật khẩu, không mất phí (GitHub Pages + gói miễn phí Cloudflare Workers).</li>
       <li>Lãi lỗ bằng USD: (giá ra − giá vào) × số lot × quy mô hợp đồng, người xem tự chỉnh.</li>
       <li>Mã theo ký hiệu TradingView, chọn được từng kỳ hạn hợp đồng.</li>
+      <li>Bảng giá bên trái mặc định có vàng, bạc, đồng, dầu WTI, dầu Brent và DXY. Bấm "+ Thêm mã" để bổ sung, rê chuột vào một mã rồi bấm × để bỏ. Danh sách được nhớ trên máy. Giá trong bảng hiện là giá mẫu.</li>
     </ul>
   </div>
   <div>
@@ -261,6 +280,9 @@ const SYM=[
  {id:"NYMEX:CL1!",root:"CL",name:"Dầu thô WTI · liên tục",type:"futures",px:68.74,size:1000,unit:1,cm:["CL1! · Liên tục","CLF2027 · Th01/2027","CLG2027 · Th02/2027","CLH2027 · Th03/2027"]},
  {id:"CBOT:ZS1!",root:"ZS",name:"Đậu tương · liên tục (cent/giạ)",type:"futures",px:983.25,size:5000,unit:.01,cm:["ZS1! · Liên tục","ZSF2027 · Th01/2027","ZSH2027 · Th03/2027","ZSK2027 · Th05/2027"]},
  {id:"CBOT:ZC1!",root:"ZC",name:"Ngô · liên tục (cent/giạ)",type:"futures",px:428.5,size:5000,unit:.01,cm:["ZC1! · Liên tục","ZCH2027 · Th03/2027","ZCK2027 · Th05/2027"]},
+ {id:"COMEX:HG1!",root:"HG",name:"Đồng · liên tục",type:"futures",px:4.3105,size:25000,unit:1,cm:["HG1! · Liên tục","HGZ2026 · Th12/2026","HGH2027 · Th03/2027","HGK2027 · Th05/2027"]},
+ {id:"ICEEUR:BRN1!",root:"BRN",name:"Dầu thô Brent · liên tục",type:"futures",px:72.86,size:1000,unit:1,cm:["BRN1! · Liên tục","BRNF2027 · Th01/2027","BRNG2027 · Th02/2027","BRNH2027 · Th03/2027"]},
+ {id:"TVC:DXY",root:"DXY",name:"Chỉ số Đô la Mỹ",type:"index",px:103.913,size:1000,unit:1},
  {id:"ICEUS:KC1!",root:"KC",name:"Cà phê Arabica · liên tục (cent/lb)",type:"futures",px:302.15,size:37500,unit:.01,cm:["KC1! · Liên tục","KCH2027 · Th03/2027","KCK2027 · Th05/2027"]}
 ];
 const IND=[
@@ -268,7 +290,7 @@ const IND=[
  {id:"don",name:"Breakout Donchian 20",c:"--i2",wr:.5,logic:{"Vào lệnh Mua":["Giá đóng cửa vượt đỉnh 20 nến","Khối lượng lớn hơn 1,5 × trung bình 20 nến"],"Vào lệnh Bán":["Giá đóng cửa thủng đáy 20 nến","Khối lượng lớn hơn 1,5 × trung bình 20 nến"],"Thoát lệnh":["SL = cạnh giữa kênh Donchian","TP = 2 × khoảng SL, dời SL về hòa vốn khi đạt 1R"],"Bộ lọc":["ADX(14) lớn hơn 20"]}},
  {id:"rsi",name:"RSI Divergence",c:"--i3",wr:.55,logic:{"Vào lệnh Mua":["Giá tạo đáy thấp hơn, RSI(14) tạo đáy cao hơn","RSI dưới 35 tại đáy thứ hai","Nến xác nhận đóng trên đỉnh nến đáy"],"Vào lệnh Bán":["Giá tạo đỉnh cao hơn, RSI(14) tạo đỉnh thấp hơn","RSI trên 65 tại đỉnh thứ hai"],"Thoát lệnh":["SL dưới/trên đáy/đỉnh gần nhất","TP = 2 × SL"],"Bộ lọc":["Chỉ giao dịch theo xu hướng khung 4H"]}},
 ];
-const ALL=["GC","XAU","SI","XAG","CL","ZS","ZC","KC"],assign={ema:ALL,don:ALL,rsi:ALL};
+const ALL=["GC","XAU","SI","XAG","CL","BRN","HG","DXY","ZS","ZC","KC"],assign={ema:ALL,don:ALL,rsi:ALL};
 const STUD=[
  {id:"vol",name:"Volume",kind:"pane",fixed:true},{id:"ema",name:"EMA 20 / 50",kind:"over"},{id:"sma",name:"SMA 200",kind:"over"},
  {id:"bb",name:"Bollinger Bands 20, 2",kind:"over"},{id:"vwap",name:"VWAP",kind:"over"},{id:"ichi",name:"Ichimoku (Tenkan / Kijun)",kind:"over"},
@@ -406,7 +428,7 @@ function studies(b){const C=b.map(x=>x.c),H=b.map(x=>x.h),L=b.map(x=>x.l),o={};
 
 function drawChart(){const cv=$("#chart"),r=cv.getBoundingClientRect();if(!r.width)return;const dpr=devicePixelRatio||1;cv.width=r.width*dpr;cv.height=r.height*dpr;
   const c=cv.getContext("2d");c.scale(dpr,dpr);const W=r.width,H=r.height,all=bars(),pad=70,bot=22;
-  const n=Math.max(15,Math.min(all.length-210,Math.round(V.count||Math.floor((W-pad)/8))));const prevShift=V.shift;V.shift=V.cs?Math.round(n*.15):0;if(V.off===-prevShift||V.as)V.off=-V.shift;V.off=Math.max(-Math.floor(n*.8),Math.min(all.length-210-n,V.off));const st0=all.length-n-Math.max(0,Math.round(V.off)),rightPad=Math.max(0,-Math.round(V.off)),B=all.slice(st0,st0+n-rightPad),S=studies(all),cut=a=>a.slice(st0,st0+n-rightPad);
+  const n=Math.max(15,Math.min(all.length-210,Math.round(V.count||Math.floor((W-pad)/8))));const prevShift=V.shift;V.shift=V.cs?Math.round(n*.15):0;if(V.off===-prevShift||V.as)V.off=-V.shift;V.off=Math.max(-Math.floor(n*.8),Math.min(all.length-210-n,V.off));const rightPad=Math.max(0,-Math.round(V.off)),st0=all.length-(n-rightPad)-Math.max(0,Math.round(V.off)),B=all.slice(st0,st0+n-rightPad),S=studies(all),cut=a=>a.slice(st0,st0+n-rightPad);
   const panes=STUD.filter(s=>s.kind==="pane"&&on.has(s.id)),ph=L.paneH?Math.min(L.paneH,(H-bot-160)/Math.max(1,panes.length)):Math.min(110,(H-bot)*.18),priceH=H-bot-ph*panes.length,bw=(W-pad)/n,f=dp(sym.px),X=i=>i*bw+bw/2;
   c.fillStyle=css("--bg");c.fillRect(0,0,W,H);c.font="10px Roboto Mono, monospace";
   let mx=Math.max(...B.map(b=>b.h)),mn=Math.min(...B.map(b=>b.l));if(on.has("bb")){const u=cut(S.bbU).filter(x=>x),l=cut(S.bbL).filter(x=>x);mx=Math.max(mx,...u);mn=Math.min(mn,...l)}
@@ -482,16 +504,29 @@ document.querySelectorAll(".menu").forEach(m=>m.addEventListener("click",e=>e.st
 $("#cUp").oninput=e=>{colors.up=e.target.value;drawChart()};$("#cDn").oninput=e=>{colors.dn=e.target.value;drawChart()};
 $("#cReset").onclick=()=>{colors={up:"#ffffff",dn:"#ff3b3b"};$("#cUp").value=colors.up;$("#cDn").value=colors.dn;drawChart()};
 
+const WLC={GC:"#e8b923",SI:"#c0c4cc",HG:"#c8743a",CL:"#8a8f98",BRN:"#5b8def",DXY:"#22c55e",XAU:"#e8b923",XAG:"#c0c4cc",ZS:"#3fa34d",ZC:"#f2c14e",KC:"#8b5a2b"};
+let WL=["COMEX:GC1!","COMEX:SI1!","COMEX:HG1!","NYMEX:CL1!","ICEEUR:BRN1!","TVC:DXY"];try{const x=JSON.parse(localStorage.getItem("t568-wl")||"null");if(Array.isArray(x)&&x.length)WL=x.filter(id=>SYM.some(s=>s.id===id))}catch(e){}
+const saveWL=()=>{try{localStorage.setItem("t568-wl",JSON.stringify(WL))}catch(e){}};
+function quote(sy){const R=rng(sy.id+"q"),pct=(R()-.5)*.07,prev=sy.px/(1+pct);return{px:sy.px,ch:sy.px-prev,pct:pct*100}}
+function renderWL(){$("#wlist").innerHTML=WL.map(id=>{const sy=SYM.find(s=>s.id===id);if(!sy)return"";const qt=quote(sy),f=dp(sy.px),cl=qt.ch>=0?"up":"down",tk=sy.id.split(":")[1];
+  return `<div class="wrow${sy.id===sym.id?' on':''}" data-wl="${sy.id}" role="button" tabindex="0"><span class="wico" style="background:${WLC[sy.root]||'#888'}">${sy.root.slice(0,3)}</span><span class="wtk">${tk}</span><span class="wpx num">${qt.px.toFixed(f)}</span><span class="wnm">${sy.name.split(" · ")[0]}</span><span class="wch num ${cl}">${qt.ch>=0?'+':''}${qt.ch.toFixed(f)} ${qt.pct>=0?'+':''}${qt.pct.toFixed(2)}%</span><button class="wx" data-wx="${sy.id}" title="Bỏ khỏi bảng giá" aria-label="Bỏ ${tk}">×</button></div>`}).join("")||'<div class="empty">Bảng giá trống.</div>';
+  $("#wlist").querySelectorAll("[data-wl]").forEach(r=>{const go=()=>{sym=SYM.find(s=>s.id===r.dataset.wl);open=open.slice(0,1);renderAll()};r.onclick=e=>{if(e.target.closest("[data-wx]"))return;go()};r.onkeydown=e=>{if(e.key==="Enter")go()}});
+  $("#wlist").querySelectorAll("[data-wx]").forEach(b=>b.onclick=()=>{WL=WL.filter(x=>x!==b.dataset.wx);saveWL();renderWL()})}
+function wlSearch(){const t=$("#wlq").value.trim().toUpperCase(),m=SYM.filter(s=>!WL.includes(s.id)&&(!t||s.id.includes(t)||s.root.includes(t)||s.name.toUpperCase().includes(t)));
+  $("#wlres").innerHTML=m.map(s=>`<button data-add="${s.id}"><b>+ ${s.id.split(":")[1]}</b><em>${s.id.split(":")[0]} · ${s.name.split(" · ")[0]}</em></button>`).join("")||'<div class="muted" style="padding:6px;font-size:11px">Không còn mã nào để thêm.</div>';
+  $("#wlres").querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{WL.push(b.dataset.add);saveWL();renderWL();$("#wlq").value="";wlSearch();$("#wlist").scrollTop=1e6})}
+$("#wlplus").onclick=()=>{const a=$("#wladd"),op=a.hidden;a.hidden=!op;$("#wlplus").textContent=op?"− Đóng":"+ Thêm mã";if(op){wlSearch();$("#wlq").focus()}};
+$("#wlq").oninput=wlSearch;$("#wlq").onkeydown=e=>{if(e.key==="Escape")$("#wlplus").click();if(e.key==="Enter"){const f=$("#wlres [data-add]");if(f)f.click()}};
 function renderContract(){const s=$("#contract");if(sym.cm){s.hidden=false;s.innerHTML=sym.cm.map(m=>`<option>${m}</option>`).join("")}else s.hidden=true}
 $("#contract").onchange=e=>{$("#tvSym").textContent=sym.id.split(":")[0]+":"+e.target.value.split(" ")[0]};
 const q=$("#q"),res=$("#results");
 function showRes(){const t=q.value.trim().toUpperCase(),m=SYM.filter(s=>!t||s.id.includes(t)||s.root.includes(t)||s.name.toUpperCase().includes(t));
-  res.innerHTML=m.map(s=>`<button class="res" data-id="${s.id}"><b>${s.id.split(":")[1]}</b><em>${s.id.split(":")[0]} · ${s.type==='futures'?'Hợp đồng tương lai':'CFD'}</em><small>${s.name}</small></button>`).join("")||`<div style="padding:10px" class="muted">Không tìm thấy mã.</div>`;res.hidden=false;
-  res.querySelectorAll(".res").forEach(b=>b.onclick=()=>{sym=SYM.find(s=>s.id===b.dataset.id);q.value="";res.hidden=true;open=open.slice(0,1);renderAll()})}
+  res.innerHTML=m.map(s=>`<button class="res" data-id="${s.id}"><b>${s.id.split(":")[1]}</b><em>${s.id.split(":")[0]} · ${s.type==='futures'?'Hợp đồng tương lai':s.type==='index'?'Chỉ số':'CFD'}</em><small>${s.name}</small></button>`).join("")||`<div style="padding:10px" class="muted">Không tìm thấy mã.</div>`;res.hidden=false;
+  res.querySelectorAll(".res").forEach(b=>b.onclick=()=>{sym=SYM.find(s=>s.id===b.dataset.id);if(!WL.includes(sym.id)){WL.push(sym.id);saveWL()}q.value="";res.hidden=true;open=open.slice(0,1);renderAll()})}
 q.onfocus=showRes;q.oninput=showRes;
 document.addEventListener("click",e=>{if(!e.target.closest(".search"))res.hidden=true;closeMenus()});
 
-function renderAll(){$("#tvSym").textContent=sym.id;renderContract();renderPicker();renderCols();renderCmp();drawChart();const rl=$("#resetLay");if(rl)rl.onclick=()=>{L={chartW:null,colW:{},paneH:null,termH:null};saveL();renderCols();applyLayout()}}
+function renderAll(){$("#tvSym").textContent=sym.id;renderContract();renderWL();renderPicker();renderCols();renderCmp();drawChart();const rl=$("#resetLay");if(rl)rl.onclick=()=>{L={chartW:null,colW:{},paneH:null,termH:null};saveL();renderCols();applyLayout()}}
 addEventListener("resize",drawChart);
 function tick(){const t=new Intl.DateTimeFormat("vi-VN",{timeZone:"Asia/Ho_Chi_Minh",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date());$("#clock").innerHTML=t.replace(","," ")+"<small>GMT+7</small>"}
 tick();setInterval(tick,1000);
