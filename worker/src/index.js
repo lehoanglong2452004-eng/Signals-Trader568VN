@@ -379,8 +379,14 @@ export default {
           have[tf] = r ? r.n : 0;
         }
         const { results: vers } = await env.DB.prepare(`SELECT strategy, ver, params, created_at FROM strat_vers WHERE symbol = ? ORDER BY created_at`).bind(symbol).all();
+        const admin = role === "admin";
         const strategies = cfgs.map((c) => {
           const S = STRATEGIES[c.id];
+          // Người xem (view) chỉ thấy tên, bộ thông số và tiến độ khởi động; logic và thông số chỉ quản trị thấy.
+          if (!admin) return {
+            id: c.id, name: S.name, ver: c.ver, enabled: c.enabled, warm: { tf: c.p.tf, have: have[c.p.tf] || 0, need: S.need(c.p) },
+            vers: vers.filter((v) => v.strategy === c.id).map((v) => ({ ver: v.ver, created_at: v.created_at })),
+          };
           return {
             id: c.id, name: S.name, ver: c.ver, enabled: c.enabled, logic: S.describe(c.p),
             params: S.params.map((d) => ({ ...d, v: c.p[d.k], def: d.v })),
