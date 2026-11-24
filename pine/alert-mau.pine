@@ -1,0 +1,42 @@
+// Mẫu gửi alert cho Signals Trader568VN.
+// Dán phần dưới vào cuối chỉ báo/chiến lược của bạn, rồi thay các biến
+// longEntry, shortEntry, slPrice, tpPrice... bằng điều kiện thật của bạn.
+//
+// Trên TradingView: Tạo Alert -> Điều kiện: chỉ báo này -> "Any alert() function call"
+// -> Thông báo: bật Webhook URL = https://<worker>.workers.dev/webhook?key=<WEBHOOK_KEY>
+// -> Để trống ô Message (nội dung do alert() bên dưới gửi).
+
+//@version=5
+// strategyId phải là một trong: ema | don | rsi (khớp với cột trên terminal)
+strategyId = input.string("ema", "Mã chiến lược trên terminal", options = ["ema", "don", "rsi"])
+
+f_num(v) => na(v) ? "null" : str.tostring(v, format.mintick)
+
+f_send(string ev, string side, float price, float sl, float tp, string tradeId) =>
+    msg = '{"strategy":"' + strategyId + '"' +
+          ',"symbol":"' + syminfo.tickerid + '"' +
+          ',"event":"' + ev + '"' +
+          ',"side":"' + side + '"' +
+          ',"price":' + f_num(price) +
+          ',"sl":' + f_num(sl) +
+          ',"tp":' + f_num(tp) +
+          ',"id":"' + tradeId + '"' +
+          ',"time":' + str.tostring(timenow) + '}'
+    alert(msg, alert.freq_once_per_bar_close)
+
+// ---- Ví dụ nối với logic của bạn ----
+// var string tradeId = ""
+// if longEntry
+//     tradeId := strategyId + "-" + str.tostring(time)
+//     f_send("entry", "buy", close, slPrice, tpPrice, tradeId)
+// if shortEntry
+//     tradeId := strategyId + "-" + str.tostring(time)
+//     f_send("entry", "sell", close, slPrice, tpPrice, tradeId)
+// if hitTP
+//     f_send("tp", "", tpPrice, na, na, tradeId)
+// if hitSL
+//     f_send("sl", "", slPrice, na, na, tradeId)
+// if exitOther                           // đóng lệnh vì lý do khác (EMA cắt ngược...)
+//     f_send("exit", "", close, na, na, tradeId)
+// if movedStop                           // dời SL / TP
+//     f_send("update", "", na, newSl, newTp, tradeId)

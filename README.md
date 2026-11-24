@@ -2,7 +2,8 @@
 
 Terminal theo dõi tín hiệu giao dịch phái sinh hàng hóa (vàng, bạc, dầu, đậu tương, ngô, cà phê...).
 
-> Trạng thái: **bản phác họa giao diện**. Toàn bộ số liệu trong trang là dữ liệu mẫu.
+> Trạng thái: giao diện đã nối được máy chủ tín hiệu. Khi `config.js` chưa có địa chỉ máy chủ, trang chạy bằng dữ liệu mẫu.
+> Cách cài máy chủ và alert: xem [DEPLOY.md](DEPLOY.md).
 
 ## Xem thử
 
@@ -11,7 +12,7 @@ Terminal theo dõi tín hiệu giao dịch phái sinh hàng hóa (vàng, bạc, 
 
 ## Bố cục
 
-- **Bên trái:** chart giá + volume (panel riêng, màu xanh dương cố định). Nến mặc định tăng trắng / giảm đỏ, người dùng tự đổi màu.
+- **Bên trái:** chart giá (hiện là minh họa với giá mẫu; nguồn giá thật chọn sau) + volume (panel riêng, màu xanh dương cố định). Nến mặc định tăng trắng / giảm đỏ, người dùng tự đổi màu.
   Thanh chart chỉ có khung thời gian (1m → M) và menu 10 chỉ báo phổ biến: Volume, EMA 20/50, SMA 200, Bollinger Bands, VWAP, Ichimoku, RSI, MACD, Stochastic, ATR.
 - **Bên phải:** 3 chiến lược giới thiệu (EMA Cross 9/21, Breakout Donchian 20, RSI Divergence), mỗi chiến lược một cột, mở bao nhiêu cột tùy ý. Mỗi cột chỉ hiện số của riêng chỉ báo đó:
   tín hiệu đang mở / chờ khớp, logic và điều kiện vào lệnh, lịch sử lệnh, lãi lỗ và đánh giá theo bộ quy tắc kiểu FTMO
