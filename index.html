@@ -121,6 +121,8 @@ canvas{display:block;width:100%;height:100%}
 .rkt .nm{font-weight:700;letter-spacing:.02em;white-space:normal}.rkt td:first-child{text-overflow:clip;padding-left:10px}.rkt .go{padding:0}.rkt .nm i{display:inline-block;width:7px;height:7px;margin-right:7px;vertical-align:1px}
 .rkt .sub{display:block;color:var(--muted);font-size:10.5px;font-family:var(--mono);margin-top:2px}.rkt td.num{font-family:var(--mono);font-size:12.5px}
 .rkt .go{color:var(--muted);text-align:center}.rkt tbody tr:hover .go{color:var(--amber)}
+.logout{background:none;border:1px solid var(--line);color:var(--muted);font-family:var(--cond);font-size:12px;text-transform:uppercase;letter-spacing:.05em;height:28px;padding:0 10px;cursor:pointer}.logout:hover{color:var(--sell);border-color:var(--sell)}
+.pagefs{background:none;border:1px solid var(--line);color:var(--amber);width:30px;height:28px;display:grid;place-items:center;cursor:pointer;padding:0}.pagefs:hover{border-color:var(--amber)}.pagefs[aria-pressed="true"]{background:var(--amber);color:var(--amber-ink)}
 .col.ov{border-top:0}.cbody th,.cbody td{padding-left:5px;padding-right:5px}
 .col-h .back{grid-row:1/3;grid-column:3;background:none;border:1px solid var(--line);cursor:pointer;color:var(--fg);font-family:var(--cond);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px}.col-h .back:hover{border-color:var(--amber);color:var(--amber)}
 :root[data-role="view"] .top .brand{color:#fff;text-shadow:none}
@@ -128,12 +130,12 @@ canvas{display:block;width:100%;height:100%}
 body[data-page="eval"] .picker,body[data-page="eval"] .term,body[data-page="eval"] #gutH,body[data-page="eval"] .notes{display:none}
 body:not([data-page="eval"]) #cmpsec{display:none}
 .cmpsym{display:inline-flex;flex-wrap:wrap;gap:4px}.cmpsym button{background:none;border:1px solid var(--line);color:var(--muted);font-family:var(--cond);font-size:12px;padding:3px 8px;cursor:pointer}.cmpsym button[aria-pressed="true"]{border-color:var(--amber);color:var(--amber)}
-.logic{background:var(--panel2);border-bottom:1px solid var(--line);padding:8px 10px;line-height:1.55;font-family:var(--cond);font-size:13px}
+.logic{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;background:var(--panel2);padding:10px 12px 0;line-height:1.5;font-family:var(--cond);font-size:13px}
 .logic h4{margin:8px 0 2px;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--amber);font-weight:500}
 .logic h4:first-child{margin-top:0}
 .logic ul{margin:0;padding-left:16px}
 .logic .note{margin-top:6px;font-size:11.5px;color:var(--muted)}
-.noaccess{padding:10px;font-size:11.5px;color:var(--muted);border-bottom:1px solid var(--line);background:rgba(255,77,77,.06)}
+.noaccess{flex:1 1 auto;padding:10px;font-size:11.5px;color:var(--muted);border-bottom:1px solid var(--line);background:rgba(255,77,77,.06)}
 .logicbtn{background:none;border:0;padding:6px 8px;cursor:pointer;color:var(--c);font-size:11.5px;text-align:left;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;width:100%}
 
 .pill{display:inline-block;font-family:var(--cond);font-size:10.5px;font-weight:700;letter-spacing:.05em;padding:1px 6px;text-transform:uppercase;white-space:nowrap}
@@ -175,9 +177,9 @@ tr:nth-child(even) td{background:#08080a}
 
 .verbar{padding:6px 10px;border-bottom:1px solid var(--grid);font-size:11px;color:var(--muted)}.verbar select{background:var(--bg);border:1px solid var(--line);color:var(--amber);font-size:11px;padding:2px 4px;margin-left:6px}
 .warm{padding:6px 10px;font-size:11px;color:var(--warn,#f0b429);border-bottom:1px solid var(--grid)}
-.prm{display:grid;gap:4px;margin:4px 0 8px}.prm label{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;color:var(--muted)}
-.prm input,.prm select{width:68px;background:var(--bg);border:1px solid var(--line);color:var(--amber);font-size:11.5px;padding:2px 5px;text-align:right}.prm input:disabled,.prm select:disabled{color:var(--fg);opacity:.75}
-.prmact{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.prmact button{border:1px solid var(--line);background:none;color:var(--fg);font-size:11px;padding:4px 8px;cursor:pointer}.prmact .savep{background:var(--amber);color:var(--amber-ink);border-color:var(--amber);font-weight:700}
+.prm{display:grid;gap:0;margin:4px 0 10px;border-top:1px solid var(--grid)}.prm label{display:grid;grid-template-columns:minmax(0,1fr) 96px;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--grid);font-family:var(--cond);font-size:13px;color:var(--fg);line-height:1.25}.prm label span{overflow-wrap:anywhere}
+.prm input,.prm select{width:96px;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);color:var(--amber);font-size:11.5px;padding:2px 5px;text-align:right}.prm input:disabled,.prm select:disabled{color:var(--fg);opacity:.75}
+.prmact{position:sticky;bottom:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 -12px;padding:8px 12px;background:var(--panel2);border-top:1px solid var(--line);z-index:1}.prmact button{border:1px solid var(--line);background:none;color:var(--fg);font-size:11px;padding:4px 8px;cursor:pointer}.prmact .savep{background:var(--amber);color:var(--amber-ink);border-color:var(--amber);font-weight:700}
 .cmpsec{margin-top:6px;background:var(--panel);border:1px solid var(--line);padding:10px 14px}
 .cmphd{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px;font-size:11.5px}
 .cmphd h2{font-family:var(--cond);font-size:16px;text-transform:uppercase;letter-spacing:.07em;color:var(--amber);margin:0;font-weight:700}
@@ -251,6 +253,8 @@ body.resizing{user-select:none}
   </div>
   <select class="contract" id="contract" aria-label="Kỳ hạn hợp đồng"></select>
   <span class="clock num" id="clock">--/--/---- --:--:--<small>GMT+7</small></span>
+  <button class="logout" id="logoutBtn" hidden title="Đăng xuất">Đăng xuất</button>
+  <button class="pagefs" id="pageFs" title="Xem toàn màn hình (Esc để thoát)" aria-label="Toàn màn hình" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><g stroke="currentColor" stroke-width="1.6" fill="none"><path d="M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4"/></g></svg></button>
 </header>
 
 <div class="login" id="login" hidden>
@@ -411,12 +415,12 @@ function colHTML(ind){if(!detail){const cw=L.colW[ind.id];return `<section class
    <div class="strip"><div><span class="lbl">Lãi lỗ</span><div class="v num ${tot>=0?'up':'down'}">${cl.length?usd(tot):"—"}</div></div><div><span class="lbl">Win rate</span><div class="v num">${wr==null?"—":wr.toFixed(0)+"%"}</div></div><div><span class="lbl">Số lệnh</span><div class="v num">${cl.length}</div></div></div>
    <div class="sizer"><label>Lot <input type="number" min="0.01" step="0.01" value="${s.lots}" data-k="lots" id="lots-${ind.id}"></label><label>Quy mô/lot <input type="number" min="1" value="${s.size}" data-k="size" id="size-${ind.id}"></label><span>${sym.unit<1?"giá theo cent":"USD/điểm"}</span></div>
    ${verSel}${warm}<button class="logicbtn" data-logic="${ind.id}" aria-expanded="${!!s.logic}"><span>⚙ Cài đặt thông số</span><span>${s.logic?"▴":"▾"}</span></button>${!s.logic?"":LIVE&&SRV._role==="admin"?logic:`<div class="noaccess">🔒 Bạn không có quyền truy cập. Chỉ quản trị mới xem và chỉnh được thông số của chiến lược.</div>`}
-   <div class="ctabs" role="tablist">${[["sig","Tín hiệu"],["hist","Lịch sử"],["eval","Đánh giá"]].map(([k,l])=>`<button role="tab" aria-selected="${s.tab===k}" data-tab="${k}">${l}</button>`).join("")}</div>
-   <div class="cbody">${body}</div></section>`}
+   ${s.logic?"":`<div class="ctabs" role="tablist">${[["sig","Tín hiệu"],["hist","Lịch sử"],["eval","Đánh giá"]].map(([k,l])=>`<button role="tab" aria-selected="${s.tab===k}" data-tab="${k}">${l}</button>`).join("")}</div>
+   <div class="cbody">${body}</div>`}</section>`}
 
 function paramsHTML(ind,sv){const adm=SRV._role==="admin";
   return `<h4>Thông số trên ${sym.id} · bộ ${sv.ver}</h4><div class="prm">${sv.params.map(d=>`<label><span>${d.label}</span>${d.options?`<select data-pk="${d.k}"${adm?'':' disabled'}>${d.options.map(o=>`<option${o==d.v?' selected':''}>${o}</option>`).join("")}</select>`:`<input type="number" data-pk="${d.k}" value="${d.v}" min="${d.min}" max="${d.max}" step="${d.step}"${adm?'':' disabled'}>`}</label>`).join("")}</div>
-   ${adm?`<div class="prmact"><button class="savep" data-save="${ind.id}">Lưu thông số</button><button class="resetp" data-def="${ind.id}">Về mặc định</button><span class="muted" id="pmsg-${ind.id}"></span></div><div class="note">Lưu thông số khác sẽ tạo bộ thông số mới. Lịch sử và đánh giá tách riêng theo từng bộ, chọn ở ô "Bộ thông số". Lệnh đang mở vẫn được theo dõi đến khi đóng.</div>`:`<div class="note">Chỉ quản trị mới chỉnh được thông số.</div>`}`}
+   ${adm?`<div class="note">Lưu thông số khác sẽ tạo bộ thông số mới. Lịch sử và đánh giá tách riêng theo từng bộ, chọn ở ô "Bộ thông số". Lệnh đang mở vẫn được theo dõi đến khi đóng.</div><div class="prmact"><button class="savep" data-save="${ind.id}">Lưu thông số</button><button class="resetp" data-def="${ind.id}">Về mặc định</button><span class="muted" id="pmsg-${ind.id}"></span></div>`:`<div class="note">Chỉ quản trị mới chỉnh được thông số.</div>`}`}
 function statsOf(ind,s){const cl=trades(ind).closed,pl=cl.map(t=>pnl(t,s)),A=s.acct;if(!cl.length)return null;const days={};cl.forEach((t,i)=>days[t.d]=(days[t.d]||0)+pl[i]);
   let eq=A,lo=A;pl.forEach(v=>{eq+=v;lo=Math.min(lo,eq)});const prof=eq-A,worst=Math.min(0,...Object.values(days)),nd=Object.keys(days).length,maxLoss=Math.min(0,lo-A),tgt=A*s.phase/100;
   const w=pl.filter(v=>v>0),gw=w.reduce((a,b)=>a+b,0),gl=-pl.filter(v=>v<0).reduce((a,b)=>a+b,0),best=Math.max(...Object.values(days));
@@ -758,19 +762,23 @@ function tick(){const t=new Intl.DateTimeFormat("vi-VN",{timeZone:"Asia/Ho_Chi_M
 tick();setInterval(tick,1000);
 renderTF();renderIndMenu();renderAll();applyLayout();
 function setMode(txt,cls){const m=$("#mode");$("#delay").hidden=cls!=="live";m.textContent=txt;m.className="sketch"+(cls?" "+cls:"")}
-async function api(path,opt={}){const r=await fetch(API+path,Object.assign({},opt,{headers:Object.assign({"content-type":"application/json"},opt.headers||{},store.get("t568-token")?{authorization:"Bearer "+store.get("t568-token")}:{})}));
-  if(r.status===401){store.set("t568-token",null);showLogin("Phiên đăng nhập đã hết, nhập lại mật khẩu.");throw new Error("401")}
+// Phiên đăng nhập chỉ giữ trong tab đang mở: đóng tab hoặc trình duyệt là phải nhập lại mật khẩu
+const tok={get:()=>{try{return sessionStorage.getItem("t568-token")}catch(e){return null}},set:v=>{try{v==null?sessionStorage.removeItem("t568-token"):sessionStorage.setItem("t568-token",v)}catch(e){}}};store.set("t568-token",null);
+async function api(path,opt={}){const r=await fetch(API+path,Object.assign({},opt,{headers:Object.assign({"content-type":"application/json"},opt.headers||{},tok.get()?{authorization:"Bearer "+tok.get()}:{})}));
+  if(r.status===401){tok.set(null);showLogin("Phiên đăng nhập đã hết, nhập lại mật khẩu.");throw new Error("401")}
   if(!r.ok)throw new Error((await r.json().catch(()=>({}))).error||("Lỗi máy chủ "+r.status));return r.json()}
 let pollT=null;
 async function refresh(){try{const d=await api("/api/trades?days=90");LIVE=d.trades||[];await Promise.all([loadQuotes(),loadBars(sym.id),loadStrategies(),loadXI()]).catch(()=>{});setMode("Live · cập nhật "+new Intl.DateTimeFormat("vi-VN",{timeZone:"Asia/Ho_Chi_Minh",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date()),"live");renderWL();renderPicker();renderCols();renderCmp();drawChart()}
   catch(e){if(e.message!=="401")setMode("Mất kết nối máy chủ","err")}}
-function startPoll(){clearInterval(pollT);refresh();pollT=setInterval(refresh,Math.max(5,+CFG.pollSeconds||10)*1000)}
-function showLogin(msg){$("#login").hidden=false;$("#loginMsg").textContent=msg||"";clearInterval(pollT);setTimeout(()=>$("#pw").focus(),0)}
+function startPoll(){$("#logoutBtn").hidden=false;clearInterval(pollT);refresh();pollT=setInterval(refresh,Math.max(5,+CFG.pollSeconds||10)*1000)}
+function showLogin(msg){$("#login").hidden=false;$("#logoutBtn").hidden=true;$("#loginMsg").textContent=msg||"";clearInterval(pollT);setTimeout(()=>$("#pw").focus(),0)}
 $("#loginForm").addEventListener("submit",async e=>{e.preventDefault();$("#loginMsg").textContent="";
   try{const r=await fetch(API+"/api/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password:$("#pw").value})});const d=await r.json().catch(()=>({}));
     if(!r.ok){$("#loginMsg").textContent=d.error||"Sai mật khẩu.";return}
-    store.set("t568-token",d.token);setRole(d.role);$("#pw").value="";$("#login").hidden=true;startPoll()}
+    tok.set(d.token);setRole(d.role);$("#pw").value="";$("#login").hidden=true;startPoll()}
   catch(err){$("#loginMsg").textContent="Không kết nối được máy chủ. Kiểm tra lại địa chỉ trong config.js."}});
+{const fb=$("#pageFs"),de=document.documentElement;if(!(de.requestFullscreen||de.webkitRequestFullscreen))fb.hidden=true;fb.onclick=()=>{const on=document.fullscreenElement||document.webkitFullscreenElement;if(on)(document.exitFullscreen||document.webkitExitFullscreen).call(document);else(de.requestFullscreen||de.webkitRequestFullscreen).call(de)};const sync=()=>{const on=!!(document.fullscreenElement||document.webkitFullscreenElement);fb.setAttribute("aria-pressed",on);fb.title=on?"Thoát toàn màn hình (Esc)":"Xem toàn màn hình (Esc để thoát)";setTimeout(drawChart,80)};document.addEventListener("fullscreenchange",sync);document.addEventListener("webkitfullscreenchange",sync)}
 document.querySelectorAll(".ptabs [data-page]").forEach(b=>b.onclick=()=>setPage(b.dataset.page));setPage(store.get("t568-page"));setRole(store.get("t568-role"));
-if(API){store.get("t568-token")?startPoll():showLogin()}else setMode("Dữ liệu mẫu");document.fonts&&document.fonts.ready.then(drawChart);
+$("#logoutBtn").onclick=()=>{tok.set(null);store.set("t568-role",null);delete document.documentElement.dataset.role;LIVE=null;showLogin("Đã đăng xuất.")};
+if(API){tok.get()?startPoll():showLogin()}else setMode("Dữ liệu mẫu");document.fonts&&document.fonts.ready.then(drawChart);
 </script>
