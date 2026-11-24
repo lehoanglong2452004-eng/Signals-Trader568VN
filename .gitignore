@@ -1,2 +1,3 @@
 worker/src/strategies.js
 private/
+worker/src/indicators.js

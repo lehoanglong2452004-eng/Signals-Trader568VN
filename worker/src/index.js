@@ -2,6 +2,7 @@
 // Chạy trên Cloudflare Workers, lưu dữ liệu trong D1.
 
 import { STRATEGIES } from "./strategies.js";
+import { INDICATORS, indParams } from "./indicators.js";
 
 const enc = new TextEncoder();
 
@@ -413,6 +414,33 @@ export default {
             .bind(id, symbol, ver, JSON.stringify(p), Date.now()),
         ]);
         return json({ ok: true, ver, params: p }, 200, cors);
+      }
+
+      // Chỉ báo độc quyền: máy chủ tính, trình duyệt chỉ nhận hình vẽ sẵn
+      if (url.pathname === "/api/indicators" && req.method === "GET") {
+        if (!(await isAuthed(env, req))) return json({ error: "Cần đăng nhập" }, 401, cors);
+        const TFS = [60, 180, 300, 900, 1800, 3600, 7200, 14400, 86400, 604800, 2592000];
+        const list = Object.entries(INDICATORS).map(([id, I]) => ({
+          id, name: I.name, short: I.short, params: I.params,
+          needs: Object.fromEntries(TFS.map((s) => [s, I.needs(indParams(id, {}), s)])),
+        }));
+        return json({ indicators: list }, 200, cors);
+      }
+
+      if (url.pathname === "/api/ind" && req.method === "POST") {
+        if (!(await isAuthed(env, req))) return json({ error: "Cần đăng nhập" }, 401, cors);
+        const b = await req.json().catch(() => ({}));
+        const I = INDICATORS[b.id];
+        if (!I) return json({ error: "Không có chỉ báo này" }, 400, cors);
+        const toBars = (a, max) => (Array.isArray(a) ? a.slice(-max) : []).map((x) => ({ t: +x[0], o: +x[1], h: +x[2], l: +x[3], c: +x[4], v: +x[5] || 0 }));
+        const htf = {};
+        for (const k of ["5", "15", "60", "240", "D", "W"]) if (b.htf && b.htf[k]) htf[k] = toBars(b.htf[k], 2500);
+        const ctx = {
+          bars: toBars(b.bars, 4000), htf, tfSec: Math.max(60, Number(b.tfSec) || 900), mintick: Number(b.mintick) || 0.01,
+          dec: Math.max(0, Math.min(8, Number(b.dec) || 2)), lastClosed: !!b.lastClosed, symbol: String(b.symbol || ""), tf: String(b.tf || ""),
+        };
+        const out = I.run(ctx, indParams(b.id, b.p || {}));
+        return json(out, 200, cors);
       }
 
       return json({ error: "Không tìm thấy" }, 404, cors);
