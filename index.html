@@ -305,30 +305,7 @@ body.resizing{user-select:none}
 
 <section class="cmpsec" id="cmpsec" aria-label="So sánh các chiến lược"></section>
 
-<section class="notes">
-  <div>
-    <h2>Đã chốt</h2>
-    <ul>
-      <li>Máy chủ Cloudflare tự tính tín hiệu 24/7 từ nến 1 phút do TradingView gửi về, tự theo dõi TP/SL. Logic chiến lược nằm riêng trên máy chủ, không công khai. Khi chưa nối máy chủ, trang hiện dữ liệu mẫu.</li>
-      <li>Thông số chỉnh ngay trong "Xem logic, thông số" của từng chiến lược, riêng cho từng mã. Mỗi lần đổi là một bộ thông số mới, lịch sử và đánh giá tách theo từng bộ.</li>
-      <li>Trang có mật khẩu, không mất phí (GitHub Pages + gói miễn phí Cloudflare Workers).</li>
-      <li>Lãi lỗ bằng USD: (giá ra − giá vào) × số lot × quy mô hợp đồng, người xem tự chỉnh.</li>
-      <li>Mã theo ký hiệu TradingView, chọn được từng kỳ hạn hợp đồng.</li>
-      <li>Bảng giá bên trái mặc định có vàng, bạc, đồng, dầu WTI, dầu Brent và DXY. Bấm "+ Thêm mã" để bổ sung, rê chuột vào một mã rồi bấm × để bỏ. Danh sách được nhớ trên máy. Khi đã đăng nhập, giá cuối và khối lượng trong ngày lấy từ chỉ báo pine/gia-realtime.pine trên TradingView (trễ khoảng 1 phút).</li>
-    </ul>
-  </div>
-  <div>
-    <h2>Chart</h2>
-    <ul>
-      <li>Khi đã đăng nhập, chart vẽ từ nến 1 phút mà pine/gia-realtime.pine gửi về và tự gộp lên khung đang xem; lịch sử dài dần theo thời gian chạy. Khi chưa nối máy chủ, chart dùng giá mẫu. Giá realtime xem trên TradingView qua nút "Mở trên TradingView".</li>
-      <li>Thanh chart chỉ có khung thời gian, không có công cụ vẽ. Giá luôn tự vừa khung. Kéo ngang để xem nến cũ, cuộn chuột để phóng to/thu nhỏ, nhấp đúp để về mặc định. Nút xanh lá: tự cuộn tới nến mới nhất. Nút xanh dương: chừa khoảng trống bên phải.</li>
-      <li>Menu "Chỉ báo" có sẵn 10 chỉ báo phổ biến. Chỉ báo tự viết sẽ bổ sung vào menu này sau.</li>
-      <li>Volume là panel riêng màu xanh dương cố định, tắt bằng dấu × trên panel và bật lại trong menu "Chỉ báo".</li>
-      <li>Nến mặc định tăng trắng, giảm đỏ. Đổi trong "Màu nến".</li>
-      <li>Phần gán chỉ báo tín hiệu cho từng mã nằm ở trang quản trị riêng của bạn, không hiện trên giao diện này.</li>
-    </ul>
-  </div>
-</section>
+
 
 <script src="config.js"></script>
 <script>
