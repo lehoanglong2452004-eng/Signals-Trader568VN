@@ -112,6 +112,7 @@ canvas{display:block;width:100%;height:100%}
 .logic h4:first-child{margin-top:0}
 .logic ul{margin:0;padding-left:16px}
 .logic .note{margin-top:6px;font-size:11.5px;color:var(--muted)}
+.noaccess{padding:10px;font-size:11.5px;color:var(--muted);border-bottom:1px solid var(--line);background:rgba(255,77,77,.06)}
 .logicbtn{background:none;border:0;padding:6px 8px;cursor:pointer;color:var(--c);font-size:11.5px;text-align:left;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;width:100%}
 
 .pill{display:inline-block;font-family:var(--cond);font-size:10.5px;font-weight:700;letter-spacing:.05em;padding:1px 6px;text-transform:uppercase;white-space:nowrap}
@@ -381,7 +382,7 @@ function colHTML(ind){if(LIVE&&SRV[ind.id])ind={...ind,name:SRV[ind.id].name};co
    <div class="col-h"><i></i><h3>${ind.name}</h3><small>${sym.id} · ${LIVE?"dữ liệu thật":"dữ liệu mẫu"}</small><button class="x" aria-label="Đóng cột" data-close="${ind.id}">×</button></div>
    <div class="strip"><div><span class="lbl">Lãi lỗ</span><div class="v num ${tot>=0?'up':'down'}">${cl.length?usd(tot):"—"}</div></div><div><span class="lbl">Win rate</span><div class="v num">${wr==null?"—":wr.toFixed(0)+"%"}</div></div><div><span class="lbl">Số lệnh</span><div class="v num">${cl.length}</div></div></div>
    <div class="sizer"><label>Lot <input type="number" min="0.01" step="0.01" value="${s.lots}" data-k="lots" id="lots-${ind.id}"></label><label>Quy mô/lot <input type="number" min="1" value="${s.size}" data-k="size" id="size-${ind.id}"></label><span>${sym.unit<1?"giá theo cent":"USD/điểm"}</span></div>
-   ${verSel}${warm}${!(LIVE&&SRV._role==="admin")?"":`<button class="logicbtn" data-logic="${ind.id}"><span>${s.logic?"Ẩn":"Xem"} logic${sv?", thông số":""} và điều kiện vào lệnh</span><span>${s.logic?"▴":"▾"}</span></button>${logic}`}
+   ${verSel}${warm}<button class="logicbtn" data-logic="${ind.id}" aria-expanded="${!!s.logic}"><span>⚙ Cài đặt thông số</span><span>${s.logic?"▴":"▾"}</span></button>${!s.logic?"":LIVE&&SRV._role==="admin"?logic:`<div class="noaccess">🔒 Bạn không có quyền truy cập. Chỉ quản trị mới xem và chỉnh được thông số của chiến lược.</div>`}
    <div class="ctabs" role="tablist">${[["sig","Tín hiệu"],["hist","Lịch sử"],["eval","Đánh giá"]].map(([k,l])=>`<button role="tab" aria-selected="${s.tab===k}" data-tab="${k}">${l}</button>`).join("")}</div>
    <div class="cbody">${body}</div></section>`}
 
