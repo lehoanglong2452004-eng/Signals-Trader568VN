@@ -43,7 +43,7 @@ select.contract{background:var(--panel2);color:var(--fg);border:1px solid var(--
 .ichip[aria-pressed="true"]{border-color:var(--amber)}
 .ichip[aria-pressed="false"]{color:var(--muted)}
 
-.term{display:flex;gap:0;margin-top:6px;height:max(660px,calc(100vh - 130px))}
+.term{display:flex;gap:0;margin-top:6px;height:max(660px,calc(100vh - 90px))}
 .wl{flex:0 0 232px;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);margin-right:6px;min-width:0;overflow:hidden}
 .wlhd{display:flex;align-items:baseline;justify-content:space-between;padding:8px 10px 6px;border-bottom:1px solid var(--line)}
 .wlhd span{font-family:var(--cond);font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--amber)}
@@ -267,7 +267,7 @@ body.resizing{user-select:none}
   </form>
 </div>
 
-<div class="picker" id="picker"></div>
+<div class="picker" id="picker" hidden></div>
 
 <div class="term">
   <aside class="wl" aria-label="Bảng giá"><div class="wlhd"><span>Bảng giá</span><em id="wlmode">giá mẫu</em></div><div class="wlcol"><span>Mã · KL ngày</span><span>Giá cuối · thay đổi</span></div><div id="wlist"></div><div class="wladd" id="wladd" hidden><input id="wlq" autocomplete="off" placeholder="Gõ mã: HG, ZS, XAUUSD..." aria-label="Tìm mã để thêm"><div id="wlres"></div></div><button class="wlft" id="wlplus" title="Thêm mã vào bảng giá">+ Thêm mã</button></aside>
@@ -282,6 +282,7 @@ body.resizing{user-select:none}
       <button class="icobtn on" id="asBtn" aria-pressed="true" title="Tự cuộn tới nến mới nhất"><svg width="22" height="14" viewBox="0 0 22 14" aria-hidden="true"><g stroke="#22c55e" stroke-width="1.4" fill="none"><path d="M2 2v10M5 4v6M3.5 3v8"/><path d="M8 7h11M15 3.5L19 7l-4 3.5"/></g></svg></button>
       <button class="icobtn on" id="csBtn" aria-pressed="true" title="Chừa khoảng trống bên phải chart"><svg width="22" height="14" viewBox="0 0 22 14" aria-hidden="true"><g stroke="#3b82f6" stroke-width="1.4" fill="none"><path d="M17 2v10M20 4v6M18.5 3v8"/><path d="M14 7H3M7 3.5L3 7l4 3.5"/></g></svg></button>
       <button class="icobtn on" id="fsBtn" aria-pressed="false" title="Phóng to biểu đồ toàn màn hình (Esc để thoát)"><svg width="16" height="14" viewBox="0 0 16 14" aria-hidden="true"><g stroke="#f5b301" stroke-width="1.5" fill="none"><path d="M1 5V1h4M11 1h4v4M15 9v4h-4M5 13H1V9"/></g></svg></button>
+      <button class="icobtn on" id="resetLay" title="Đặt lại bố cục (độ rộng chart, cột, chiều cao)"><svg width="15" height="14" viewBox="0 0 15 14" aria-hidden="true"><g stroke="#a1a1aa" stroke-width="1.5" fill="none"><path d="M3 4.5A5 5 0 1 1 2.5 9"/><path d="M1 1.5v3.5h3.5"/></g></svg></button>
       <span class="ohlc num" id="ohlc"></span>
       <div class="menu" id="indMenu" hidden></div>
       <div class="menu" id="setMenu" hidden>
@@ -395,7 +396,7 @@ function trades(ind){if(LIVE)return liveTrades(ind);const r=rng(ind.id+sym.id),p
 const pnl=(t,s)=>(t.x-t.e)*t.dir*s.lots*s.size*sym.unit;
 
 function renderPicker(){const av=IND.filter(i=>assign[i.id].includes(sym.root));open=open.filter(id=>av.some(i=>i.id===id)).slice(0,1);if(!open.length&&av.length)open=[av[0].id];
-  $("#picker").innerHTML=`<span class="lbl">Tín hiệu cho ${sym.id}</span>`+`<button class="resetlay" id="resetLay" style="order:9">Đặt lại bố cục</button>`+(av.length?av.map(i=>`<button class="ichip" data-id="${i.id}" aria-pressed="${open.includes(i.id)}"><i style="background:var(${i.c})"></i>${i.name} </button>`).join(""):`<span class="muted">Chưa có chỉ báo tín hiệu nào cho mã này.</span>`);
+  $("#picker").innerHTML=`<span class="lbl">Tín hiệu cho ${sym.id}</span>`+(av.length?av.map(i=>`<button class="ichip" data-id="${i.id}" aria-pressed="${open.includes(i.id)}"><i style="background:var(${i.c})"></i>${i.name} </button>`).join(""):`<span class="muted">Chưa có chỉ báo tín hiệu nào cho mã này.</span>`);
   document.querySelectorAll(".ichip").forEach(b=>b.onclick=()=>{open=[b.dataset.id];detail=true;renderAll()})}
 
 function colHTML(ind){if(!detail){const cw=L.colW[ind.id];return `<section class="col ov" style="--c:var(--amber)${cw?`;flex:0 0 ${cw}px;min-width:${cw}px;max-width:none`:''}" data-id="${ind.id}">${rankHTML()||'<div class="empty">Mã này chưa có chiến lược nào.</div>'}</section>`}
