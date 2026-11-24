@@ -122,12 +122,40 @@ async function handleAlert(env, a) {
   }
 }
 
+// Giá: chỉ báo "gia-realtime.pine" bắn mỗi nến 1 phút đã đóng.
+// bars: [[t, o, h, l, c, v], ...] (t tính bằng ms), hoặc một nến lẻ qua t/o/h/l/c/v.
+async function saveBars(env, body) {
+  const symbol = String(body.symbol || "").trim().toUpperCase();
+  if (!symbol) return json({ error: "Thiếu symbol" }, 400);
+  let rows = Array.isArray(body.bars) ? body.bars : [[body.t, body.o, body.h, body.l, body.c, body.v]];
+  rows = rows.map((r) => r.map(num)).filter((r) => r[0] !== null && r[4] !== null).slice(-500);
+  if (!rows.length) return json({ error: "Không có nến hợp lệ" }, 400);
+  const st = env.DB.prepare(
+    `INSERT INTO bars (symbol, t, o, h, l, c, v) VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(symbol, t) DO UPDATE SET o = excluded.o, h = excluded.h, l = excluded.l, c = excluded.c, v = excluded.v`
+  );
+  const batch = rows.map((r) => st.bind(symbol, r[0], r[1] ?? r[4], r[2] ?? r[4], r[3] ?? r[4], r[4], r[5] ?? 0));
+  // Giá cuối, khối lượng trong ngày (dv) và giá đóng cửa hôm trước (pc) do Pine gửi kèm.
+  const last = rows[rows.length - 1];
+  batch.push(env.DB.prepare(
+    `INSERT INTO quotes (symbol, t, c, dv, pc) VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(symbol) DO UPDATE SET t = excluded.t, c = excluded.c, dv = COALESCE(excluded.dv, quotes.dv), pc = COALESCE(excluded.pc, quotes.pc)
+     WHERE excluded.t >= quotes.t`
+  ).bind(symbol, last[0], last[4], num(body.dv), num(body.pc)));
+  // Giữ 10 ngày nến 1 phút cho mỗi mã.
+  batch.push(env.DB.prepare(`DELETE FROM bars WHERE symbol = ? AND t < ?`).bind(symbol, Date.now() - 10 * 24 * 3600 * 1000));
+  await env.DB.batch(batch);
+  return json({ ok: true, outcome: "bars:" + rows.length });
+}
+
 async function webhook(env, req, url) {
   const raw = await req.text();
   let body;
   try { body = JSON.parse(raw); } catch { return json({ error: "Nội dung alert không phải JSON hợp lệ" }, 400); }
   const key = url.searchParams.get("key") || String(body.key || "");
   if (!safeEqual(key, env.WEBHOOK_KEY || "")) return json({ error: "Sai khóa webhook" }, 401);
+
+  if (String(body.event || "").toLowerCase() === "bar") return await saveBars(env, body);
 
   const a = {
     event: String(body.event || "").toLowerCase(),
@@ -172,6 +200,30 @@ export default {
            FROM trades WHERE created_at >= ? OR status IN ('open', 'pending') ORDER BY id`
         ).bind(since).all();
         return json({ trades: results }, 200, cors);
+      }
+
+      if (url.pathname === "/api/bars" && req.method === "GET") {
+        if (!(await isAuthed(env, req))) return json({ error: "Cần đăng nhập" }, 401, cors);
+        const symbol = String(url.searchParams.get("symbol") || "").toUpperCase();
+        const limit = Math.min(15000, Math.max(10, Number(url.searchParams.get("limit")) || 3000));
+        const since = Number(url.searchParams.get("since")) || 0;
+        const { results } = await env.DB.prepare(
+          `SELECT t, o, h, l, c, v FROM bars WHERE symbol = ? AND t >= ? ORDER BY t DESC LIMIT ?`
+        ).bind(symbol, since, limit).all();
+        return json({ symbol, bars: results.reverse().map((b) => [b.t, b.o, b.h, b.l, b.c, b.v]) }, 200, cors);
+      }
+
+      if (url.pathname === "/api/quotes" && req.method === "GET") {
+        if (!(await isAuthed(env, req))) return json({ error: "Cần đăng nhập" }, 401, cors);
+        const syms = String(url.searchParams.get("symbols") || "").toUpperCase().split(",").map((s) => s.trim()).filter(Boolean).slice(0, 40);
+        const quotes = {};
+        if (syms.length) {
+          const { results } = await env.DB.prepare(
+            `SELECT symbol, t, c, dv, pc FROM quotes WHERE symbol IN (${syms.map(() => "?").join(",")})`
+          ).bind(...syms).all();
+          for (const q of results) quotes[q.symbol] = { t: q.t, c: q.c, dv: q.dv, pc: q.pc };
+        }
+        return json({ quotes }, 200, cors);
       }
 
       return json({ error: "Không tìm thấy" }, 404, cors);

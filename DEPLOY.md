@@ -40,3 +40,16 @@ Dùng mẫu `pine/alert-mau.pine`. Mỗi alert gửi JSON:
 | `tp` / `sl` / `exit` | Đóng lệnh do chạm TP, chạm SL hoặc lý do khác |
 
 `strategy` phải là `ema`, `don` hoặc `rsi`. Webhook URL: `https://<worker>.workers.dev/webhook?key=<WEBHOOK_KEY>`.
+
+## Giá realtime cho chart và bảng giá
+
+Giá lấy từ chính tài khoản TradingView của bạn qua chỉ báo `pine/gia-realtime.pine` (mỗi mã một alert, trễ khoảng 1 phút).
+
+1. Mở chart mã cần theo dõi trên TradingView, chọn khung **1 phút**.
+2. Pine Editor → dán toàn bộ `pine/gia-realtime.pine` → **Add to chart**.
+3. Tạo Alert: Condition = **T568 Giá realtime** → **Any alert() function call**, Expiration = Open-ended nếu gói cho phép.
+4. Tab Notifications: bật **Webhook URL** = `https://signals-trader568vn.lehoanglong2452004.workers.dev/webhook?key=<WEBHOOK_KEY>`.
+5. Lặp lại cho từng mã (GC1!, SI1!, HG1!, CL1!, BRN1!, DXY...).
+
+Lần đầu alert chạy, chỉ báo gửi kèm 200 nến gần nhất; sau đó mỗi phút gửi nến mới. Máy chủ giữ 10 ngày nến 1 phút và tự gộp lên các khung lớn hơn khi xem.
+Lưu ý: data CME trên tài khoản TradingView chỉ dùng cho cá nhân, không chia sẻ trang có giá này cho người khác.

@@ -23,3 +23,20 @@ CREATE TABLE IF NOT EXISTS alerts (
   body        TEXT    NOT NULL,
   outcome     TEXT
 );
+
+-- Nến 1 phút do chỉ báo pine/gia-realtime.pine gửi về.
+CREATE TABLE IF NOT EXISTS bars (
+  symbol  TEXT    NOT NULL,
+  t       INTEGER NOT NULL,                 -- ms, giờ mở nến
+  o REAL, h REAL, l REAL, c REAL, v REAL,
+  PRIMARY KEY (symbol, t)
+);
+
+-- Giá cuối và khối lượng trong ngày của từng mã cho bảng giá.
+CREATE TABLE IF NOT EXISTS quotes (
+  symbol  TEXT PRIMARY KEY,
+  t       INTEGER NOT NULL,                 -- ms, nến 1 phút mới nhất
+  c       REAL,                             -- giá cuối
+  dv      REAL,                             -- khối lượng trong ngày
+  pc      REAL                              -- giá đóng cửa phiên trước
+);

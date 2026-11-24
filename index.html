@@ -54,7 +54,7 @@ select.contract{background:var(--panel2);color:var(--fg);border:1px solid var(--
 .wrow:hover{background:#111114}.wrow.on{background:#16161b;border-left-color:var(--amber)}
 .wico{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-family:var(--cond);font-weight:700;font-size:10px;color:#000;grid-row:span 2}
 .wtk{font-weight:600;font-size:12.5px;color:var(--fg)}.wnm{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wpx{text-align:right;font-size:12.5px}.wch{text-align:right;font-size:10.5px;white-space:nowrap}
+.wpx{text-align:right;font-size:12.5px}.wvol{font-size:10.5px;color:var(--muted)}.wch{text-align:right;font-size:10.5px;white-space:nowrap}
 .wx{position:absolute;left:1px;top:1px;background:none;border:0;color:var(--muted);cursor:pointer;font-size:12px;line-height:1;padding:2px;display:none}.wrow:hover .wx{display:block}.wx:hover{color:var(--sell)}
 .wlft{padding:8px 10px;font-size:12px;color:var(--amber);border:0;border-top:1px solid var(--line);background:none;text-align:left;cursor:pointer;font-family:var(--cond);font-weight:700;letter-spacing:.04em}.wlft:hover{background:#111114}
 .wladd{border-top:1px solid var(--line);padding:6px;display:flex;flex-direction:column;gap:4px;max-height:240px}
@@ -213,7 +213,7 @@ body.resizing{user-select:none}
 <div class="picker" id="picker"></div>
 
 <div class="term">
-  <aside class="wl" aria-label="Bảng giá"><div class="wlhd"><span>Bảng giá</span><em>giá mẫu</em></div><div class="wlcol"><span>Mã</span><span>Giá · thay đổi</span></div><div id="wlist"></div><div class="wladd" id="wladd" hidden><input id="wlq" autocomplete="off" placeholder="Gõ mã: HG, ZS, XAUUSD..." aria-label="Tìm mã để thêm"><div id="wlres"></div></div><button class="wlft" id="wlplus" title="Thêm mã vào bảng giá">+ Thêm mã</button></aside>
+  <aside class="wl" aria-label="Bảng giá"><div class="wlhd"><span>Bảng giá</span><em id="wlmode">giá mẫu</em></div><div class="wlcol"><span>Mã · KL ngày</span><span>Giá cuối · thay đổi</span></div><div id="wlist"></div><div class="wladd" id="wladd" hidden><input id="wlq" autocomplete="off" placeholder="Gõ mã: HG, ZS, XAUUSD..." aria-label="Tìm mã để thêm"><div id="wlres"></div></div><button class="wlft" id="wlplus" title="Thêm mã vào bảng giá">+ Thêm mã</button></aside>
   <section class="chartbox" aria-label="Chart">
     <div class="tvbar">
       <span class="sym" id="tvSym">COMEX:GC1!</span>
@@ -253,13 +253,13 @@ body.resizing{user-select:none}
       <li>Trang có mật khẩu, không mất phí (GitHub Pages + gói miễn phí Cloudflare Workers).</li>
       <li>Lãi lỗ bằng USD: (giá ra − giá vào) × số lot × quy mô hợp đồng, người xem tự chỉnh.</li>
       <li>Mã theo ký hiệu TradingView, chọn được từng kỳ hạn hợp đồng.</li>
-      <li>Bảng giá bên trái mặc định có vàng, bạc, đồng, dầu WTI, dầu Brent và DXY. Bấm "+ Thêm mã" để bổ sung, rê chuột vào một mã rồi bấm × để bỏ. Danh sách được nhớ trên máy. Giá trong bảng hiện là giá mẫu.</li>
+      <li>Bảng giá bên trái mặc định có vàng, bạc, đồng, dầu WTI, dầu Brent và DXY. Bấm "+ Thêm mã" để bổ sung, rê chuột vào một mã rồi bấm × để bỏ. Danh sách được nhớ trên máy. Khi đã đăng nhập, giá cuối và khối lượng trong ngày lấy từ chỉ báo pine/gia-realtime.pine trên TradingView (trễ khoảng 1 phút).</li>
     </ul>
   </div>
   <div>
     <h2>Chart</h2>
     <ul>
-      <li>Chart hiện là minh họa với giá mẫu; nguồn giá thật sẽ chọn sau. Giá realtime xem trên TradingView qua nút "Mở trên TradingView".</li>
+      <li>Khi đã đăng nhập, chart vẽ từ nến 1 phút mà pine/gia-realtime.pine gửi về và tự gộp lên khung đang xem; lịch sử dài dần theo thời gian chạy. Khi chưa nối máy chủ, chart dùng giá mẫu. Giá realtime xem trên TradingView qua nút "Mở trên TradingView".</li>
       <li>Thanh chart chỉ có khung thời gian, không có công cụ vẽ. Giá luôn tự vừa khung. Kéo ngang để xem nến cũ, cuộn chuột để phóng to/thu nhỏ, nhấp đúp để về mặc định. Nút xanh lá: tự cuộn tới nến mới nhất. Nút xanh dương: chừa khoảng trống bên phải.</li>
       <li>Menu "Chỉ báo" có sẵn 10 chỉ báo phổ biến. Chỉ báo tự viết sẽ bổ sung vào menu này sau.</li>
       <li>Volume là panel riêng màu xanh dương cố định, tắt bằng dấu × trên panel và bật lại trong menu "Chỉ báo".</li>
@@ -311,6 +311,17 @@ function rng(str){let s=0;for(const ch of str)s=(s*31+ch.charCodeAt(0))%233280;r
 const CFG=Object.assign({api:"",pollSeconds:10},window.T568_CONFIG||{});
 const API=String(CFG.api||"").replace(/\/+$/,"");
 let LIVE=null; // mảng lệnh thật từ máy chủ; null = dữ liệu mẫu
+// Giá thật: nến 1 phút từ pine/gia-realtime.pine, gộp lên khung đang xem ngay trên trình duyệt.
+const RB={},QT={};
+const TFM={"1m":1,"3m":3,"5m":5,"15m":15,"30m":30,"1H":60,"2H":120,"4H":240,"D":1440,"W":10080,"M":43200};
+function agg(src,tf){const m=TFM[tf]*60000,W0=345600000,out=[];let cur=null;
+  for(const b of src){let k;if(tf==="M"){const d=new Date(b.t);k=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),1)}else if(tf==="W")k=Math.floor((b.t-W0)/m)*m+W0;else k=Math.floor(b.t/m)*m;
+    if(!cur||cur.t!==k){cur={t:k,o:b.o,h:b.h,l:b.l,c:b.c,v:b.v};out.push(cur)}else{cur.h=Math.max(cur.h,b.h);cur.l=Math.min(cur.l,b.l);cur.c=b.c;cur.v+=b.v}}return out}
+async function loadBars(id){const r=RB[id]||(RB[id]={bars:[],last:0});
+  const d=await api(`/api/bars?symbol=${encodeURIComponent(id)}&since=${r.last}&limit=${r.last?500:15000}`);
+  for(const a of d.bars||[]){const b={t:a[0],o:a[1],h:a[2],l:a[3],c:a[4],v:a[5]||0},L=r.bars[r.bars.length-1];if(L&&L.t===b.t)r.bars[r.bars.length-1]=b;else if(!L||b.t>L.t)r.bars.push(b)}
+  r.done=true;if(r.bars.length)r.last=r.bars[r.bars.length-1].t}
+async function loadQuotes(){const ids=[...new Set([...WL,sym.id])],d=await api("/api/quotes?symbols="+encodeURIComponent(ids.join(",")));for(const k in QT)delete QT[k];Object.assign(QT,d.quotes||{})}
 const store={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}};
 function rootOf(tk){let t=String(tk||"").toUpperCase();t=t.includes(":")?t.split(":")[1]:t;
   if(/^(XAU|XAG)/.test(t))return t.slice(0,3);if(t.endsWith("1!")||t.endsWith("2!"))return t.slice(0,-2);
@@ -414,7 +425,7 @@ function renderCols(){const av=IND.filter(i=>assign[i.id].includes(sym.root));
 /* ---------- Chart ---------- */
 const ema=(a,p)=>{const k=2/(p+1),o=[];a.forEach((v,i)=>o.push(i?v*k+o[i-1]*(1-k):v));return o};
 const sma=(a,p)=>a.map((_,i)=>i<p-1?null:a.slice(i-p+1,i+1).reduce((x,y)=>x+y,0)/p);
-function bars(){const R=rng(sym.id+tf),n=700,b=[];let v=sym.px;for(let i=0;i<n;i++){const o=v;v=v*(1+(R()-.47)*.007);b.push({o,c:v,h:Math.max(o,v)*(1+R()*.0025),l:Math.min(o,v)*(1-R()*.0025),v:400+R()*1600*(1+Math.abs(v-o)/o*200)})}
+function bars(){if(LIVE)return agg((RB[sym.id]||{bars:[]}).bars,tf);const R=rng(sym.id+tf),n=700,b=[];let v=sym.px;for(let i=0;i<n;i++){const o=v;v=v*(1+(R()-.47)*.007);b.push({o,c:v,h:Math.max(o,v)*(1+R()*.0025),l:Math.min(o,v)*(1-R()*.0025),v:400+R()*1600*(1+Math.abs(v-o)/o*200)})}
   const sc=sym.px/b[n-1].c;b.forEach(x=>{x.o*=sc;x.c*=sc;x.h*=sc;x.l*=sc});return b}
 function studies(b){const C=b.map(x=>x.c),H=b.map(x=>x.h),L=b.map(x=>x.l),o={};
   o.ema20=ema(C,20);o.ema50=ema(C,50);o.sma200=sma(C,200);
@@ -427,9 +438,13 @@ function studies(b){const C=b.map(x=>x.c),H=b.map(x=>x.h),L=b.map(x=>x.l),o={};
   const tr=b.map((x,i)=>i?Math.max(x.h-x.l,Math.abs(x.h-b[i-1].c),Math.abs(x.l-b[i-1].c)):x.h-x.l);o.atr=ema(tr,14);return o}
 
 function drawChart(){const cv=$("#chart"),r=cv.getBoundingClientRect();if(!r.width)return;const dpr=devicePixelRatio||1;cv.width=r.width*dpr;cv.height=r.height*dpr;
-  const c=cv.getContext("2d");c.scale(dpr,dpr);const W=r.width,H=r.height,all=bars(),pad=70,bot=22;
-  const n=Math.max(15,Math.min(all.length-210,Math.round(V.count||Math.floor((W-pad)/8))));const prevShift=V.shift;V.shift=V.cs?Math.round(n*.15):0;if(V.off===-prevShift||V.as)V.off=-V.shift;V.off=Math.max(-Math.floor(n*.8),Math.min(all.length-210-n,V.off));const rightPad=Math.max(0,-Math.round(V.off)),st0=all.length-(n-rightPad)-Math.max(0,Math.round(V.off)),B=all.slice(st0,st0+n-rightPad),S=studies(all),cut=a=>a.slice(st0,st0+n-rightPad);
-  const panes=STUD.filter(s=>s.kind==="pane"&&on.has(s.id)),ph=L.paneH?Math.min(L.paneH,(H-bot-160)/Math.max(1,panes.length)):Math.min(110,(H-bot)*.18),priceH=H-bot-ph*panes.length,bw=(W-pad)/n,f=dp(sym.px),X=i=>i*bw+bw/2;
+  const c=cv.getContext("2d");c.scale(dpr,dpr);const W=r.width,H=r.height,all=bars(),pad=70,bot=22,WARM=LIVE?0:210;
+  if(all.length<2){c.fillStyle=css("--bg");c.fillRect(0,0,W,H);c.fillStyle=css("--muted");c.font="13px Roboto Mono, monospace";c.textAlign="center";
+    c.fillText(RB[sym.id]?.done?"Chưa có giá cho "+sym.id+".":"Đang tải giá...",W/2,H/2-10);c.font="11px Roboto Mono, monospace";
+    if(RB[sym.id]?.done)c.fillText("Gắn chỉ báo pine/gia-realtime.pine cho mã này trên TradingView (khung 1 phút) và tạo alert webhook.",W/2,H/2+12);
+    c.textAlign="start";$("#hdrs").innerHTML="";$("#ohlc").textContent="";lay=null;return}
+  const avail=all.length-WARM,n=Math.max(Math.min(15,avail),Math.min(avail,Math.round(V.count||Math.floor((W-pad)/8))));const prevShift=V.shift;V.shift=V.cs?Math.round(n*.15):0;if(V.off===-prevShift||V.as)V.off=-V.shift;V.off=Math.max(-Math.floor(n*.8),Math.min(avail-n,V.off));const rightPad=Math.max(0,-Math.round(V.off)),st0=all.length-(n-rightPad)-Math.max(0,Math.round(V.off)),B=all.slice(st0,st0+n-rightPad),S=studies(all),cut=a=>a.slice(st0,st0+n-rightPad);
+  const panes=STUD.filter(s=>s.kind==="pane"&&on.has(s.id)),ph=L.paneH?Math.min(L.paneH,(H-bot-160)/Math.max(1,panes.length)):Math.min(110,(H-bot)*.18),priceH=H-bot-ph*panes.length,slots=Math.max(n,LIVE?Math.round(V.count||Math.floor((W-pad)/8)):n),bw=(W-pad)/slots,f=dp(sym.px),X=i=>(i+slots-n)*bw+bw/2;
   c.fillStyle=css("--bg");c.fillRect(0,0,W,H);c.font="10px Roboto Mono, monospace";
   let mx=Math.max(...B.map(b=>b.h)),mn=Math.min(...B.map(b=>b.l));if(on.has("bb")){const u=cut(S.bbU).filter(x=>x),l=cut(S.bbL).filter(x=>x);mx=Math.max(mx,...u);mn=Math.min(mn,...l)}
   const pr=(mx-mn)*.06;mx+=pr;mn-=pr;if(false){const cMid=(mx+mn)/2+V.yShift,half=(mx-mn)/2*V.yZoom;mx=cMid+half;mn=cMid-half}const top=22,Y=v=>top+(mx-v)/(mx-mn)*(priceH-top-6);
@@ -446,7 +461,7 @@ function drawChart(){const cv=$("#chart"),r=cv.getBoundingClientRect();if(!r.wid
   if(on.has("vwap"))line(cut(S.vwap),css("--s4"),Y,1.4,[6,3]);
   if(on.has("ichi")){line(cut(S.tenkan),css("--s2"),Y,1.2);line(cut(S.kijun),css("--s3"),Y,1.2)}
   open.forEach((id,oi)=>{const ind=IND.find(x=>x.id===id),col=css(ind.c),r2=rng(id+sym.id+tf);
-    for(let k=0;k<3;k++){const i=Math.floor(n*(.15+r2()*.75)),b=B[i],x=X(i),buy=r2()<.5,yy=buy?Y(b.l)+11+oi*9:Y(b.h)-11-oi*9;c.fillStyle=col;c.beginPath();
+    if(!LIVE)for(let k=0;k<3;k++){const i=Math.floor(n*(.15+r2()*.75)),b=B[i],x=X(i),buy=r2()<.5,yy=buy?Y(b.l)+11+oi*9:Y(b.h)-11-oi*9;c.fillStyle=col;c.beginPath();
       if(buy){c.moveTo(x,yy-7);c.lineTo(x-5,yy+2);c.lineTo(x+5,yy+2)}else{c.moveTo(x,yy+7);c.lineTo(x-5,yy-2);c.lineTo(x+5,yy-2)}c.fill()}
     const t0=trades(ind).live[0];if(oi===0&&t0&&t0.sl!=null&&t0.tp!=null){const t=t0,ix=Math.floor(n*.86),lv=(val,nm,cc)=>{if(val>mx||val<mn)return;c.strokeStyle=cc;c.setLineDash([5,4]);c.beginPath();c.moveTo(X(ix),Y(val));c.lineTo(W-pad,Y(val));c.stroke();c.setLineDash([]);
       c.fillStyle=cc;c.fillRect(W-pad,Y(val)-7,pad,14);c.fillStyle="#000";c.font="9.5px Roboto Mono, monospace";c.fillText(nm,W-pad+3,Y(val)+3)};
@@ -464,7 +479,8 @@ function drawChart(){const cv=$("#chart"),r=cv.getBoundingClientRect();if(!r.wid
     if(p.id==="stoch"){const Ys=sc(0,100);dash(20,Ys);dash(80,Ys);line(cut(S.k),css("--s2"),Ys,1.3);line(cut(S.d),css("--s1"),Ys,1.3)}
     if(p.id==="atr"){const a=cut(S.atr),Ya=sc(Math.min(...a)*.95,Math.max(...a)*1.05);line(a,css("--s4"),Ya,1.3);lab(a[n-1],Ya);name+=` <span style="color:var(--s4)">${a[n-1].toFixed(f)}</span>`}
     hdr.push({y:y0+2,html:`<b>${name}</b><button data-off="${p.id}" aria-label="Tắt ${p.name}">×</button>`})});
-  c.fillStyle=css("--muted");for(let k=1;k<6;k++){const xx=(W-pad)*k/6;c.fillText((18+k)+"/11",xx-14,H-7)}
+  c.fillStyle=css("--muted");if(B[0].t!=null){const intra=TFM[tf]<1440,fmt=new Intl.DateTimeFormat("vi-VN",intra?{timeZone:"Asia/Ho_Chi_Minh",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}:{timeZone:"Asia/Ho_Chi_Minh",day:"2-digit",month:"2-digit",year:"2-digit"});
+    for(let k=1;k<6;k++){const i=Math.floor(slots*k/6)-(slots-n);if(i>=0&&B[i])c.fillText(fmt.format(new Date(B[i].t)),X(i)-30,H-7)}}else for(let k=1;k<6;k++){const xx=(W-pad)*k/6;c.fillText((18+k)+"/11",xx-14,H-7)}
   $("#hdrs").innerHTML=hdr.map(h=>`<div class="panehdr" style="top:${h.y}px">${h.html}</div>`).join("");
   lay={priceH,ph,np:panes.length,H,bot,bw,pad,W,ppp:(mx-mn)/(priceH-28)};
   document.querySelectorAll("[data-off]").forEach(b=>b.onclick=e=>{e.stopPropagation();on.delete(b.dataset.off);renderIndMenu();drawChart()});
@@ -507,9 +523,11 @@ $("#cReset").onclick=()=>{colors={up:"#ffffff",dn:"#ff3b3b"};$("#cUp").value=col
 const WLC={GC:"#e8b923",SI:"#c0c4cc",HG:"#c8743a",CL:"#8a8f98",BRN:"#5b8def",DXY:"#22c55e",XAU:"#e8b923",XAG:"#c0c4cc",ZS:"#3fa34d",ZC:"#f2c14e",KC:"#8b5a2b"};
 let WL=["COMEX:GC1!","COMEX:SI1!","COMEX:HG1!","NYMEX:CL1!","ICEEUR:BRN1!","TVC:DXY"];try{const x=JSON.parse(localStorage.getItem("t568-wl")||"null");if(Array.isArray(x)&&x.length)WL=x.filter(id=>SYM.some(s=>s.id===id))}catch(e){}
 const saveWL=()=>{try{localStorage.setItem("t568-wl",JSON.stringify(WL))}catch(e){}};
-function quote(sy){const R=rng(sy.id+"q"),pct=(R()-.5)*.07,prev=sy.px/(1+pct);return{px:sy.px,ch:sy.px-prev,pct:pct*100}}
-function renderWL(){$("#wlist").innerHTML=WL.map(id=>{const sy=SYM.find(s=>s.id===id);if(!sy)return"";const qt=quote(sy),f=dp(sy.px),cl=qt.ch>=0?"up":"down",tk=sy.id.split(":")[1];
-  return `<div class="wrow${sy.id===sym.id?' on':''}" data-wl="${sy.id}" role="button" tabindex="0"><span class="wtk" title="${sy.id} · ${sy.name}">${tk}</span><span class="wpx num">${qt.px.toFixed(f)}</span><span></span><span class="wch num ${cl}">${qt.ch>=0?'+':''}${qt.ch.toFixed(f)} ${qt.pct>=0?'+':''}${qt.pct.toFixed(2)}%</span><button class="wx" data-wx="${sy.id}" title="Bỏ khỏi bảng giá" aria-label="Bỏ ${tk}">×</button></div>`}).join("")||'<div class="empty">Bảng giá trống.</div>';
+function quote(sy){if(LIVE){const q=QT[sy.id];if(!q||q.c==null)return null;const ch=q.pc?q.c-q.pc:null;return{px:q.c,ch,pct:ch==null?null:ch/q.pc*100,dv:q.dv}}
+  const R=rng(sy.id+"q"),pct=(R()-.5)*.07,prev=sy.px/(1+pct);return{px:sy.px,ch:sy.px-prev,pct:pct*100,dv:Math.round(20000+R()*280000)}}
+const fmtV=v=>v==null?"—":v>=1e6?(v/1e6).toFixed(2)+"M":v>=1e3?(v/1e3).toFixed(1)+"K":String(Math.round(v));
+function renderWL(){$("#wlmode").textContent=LIVE?"realtime · nến 1 phút":"giá mẫu";$("#wlist").innerHTML=WL.map(id=>{const sy=SYM.find(s=>s.id===id);if(!sy)return"";const qt=quote(sy),f=dp(qt?qt.px:sy.px),cl=!qt||qt.ch==null?"muted":qt.ch>=0?"up":"down",tk=sy.id.split(":")[1];
+  return `<div class="wrow${sy.id===sym.id?' on':''}" data-wl="${sy.id}" role="button" tabindex="0"><span class="wtk" title="${sy.id} · ${sy.name}">${tk}</span><span class="wpx num">${qt?qt.px.toFixed(f):"—"}</span><span class="wvol num">${qt?"KL "+fmtV(qt.dv):"chờ giá"}</span><span class="wch num ${cl}">${!qt||qt.ch==null?"":(qt.ch>=0?'+':'')+qt.ch.toFixed(f)+" "+(qt.pct>=0?'+':'')+qt.pct.toFixed(2)+"%"}</span><button class="wx" data-wx="${sy.id}" title="Bỏ khỏi bảng giá" aria-label="Bỏ ${tk}">×</button></div>`}).join("")||'<div class="empty">Bảng giá trống.</div>';
   $("#wlist").querySelectorAll("[data-wl]").forEach(r=>{const go=()=>{sym=SYM.find(s=>s.id===r.dataset.wl);open=open.slice(0,1);renderAll()};r.onclick=e=>{if(e.target.closest("[data-wx]"))return;go()};r.onkeydown=e=>{if(e.key==="Enter")go()}});
   $("#wlist").querySelectorAll("[data-wx]").forEach(b=>b.onclick=()=>{WL=WL.filter(x=>x!==b.dataset.wx);saveWL();renderWL()})}
 function wlSearch(){const t=$("#wlq").value.trim().toUpperCase(),m=SYM.filter(s=>!WL.includes(s.id)&&(!t||s.id.includes(t)||s.root.includes(t)||s.name.toUpperCase().includes(t)));
@@ -526,7 +544,7 @@ function showRes(){const t=q.value.trim().toUpperCase(),m=SYM.filter(s=>!t||s.id
 q.onfocus=showRes;q.oninput=showRes;
 document.addEventListener("click",e=>{if(!e.target.closest(".search"))res.hidden=true;closeMenus()});
 
-function renderAll(){$("#tvSym").textContent=sym.id;renderContract();renderWL();renderPicker();renderCols();renderCmp();drawChart();const rl=$("#resetLay");if(rl)rl.onclick=()=>{L={chartW:null,colW:{},paneH:null,termH:null};saveL();renderCols();applyLayout()}}
+function renderAll(){if(LIVE&&!RB[sym.id])loadBars(sym.id).then(()=>{loadQuotes().catch(()=>{}).then(renderWL);drawChart()}).catch(()=>{});$("#tvSym").textContent=sym.id;renderContract();renderWL();renderPicker();renderCols();renderCmp();drawChart();const rl=$("#resetLay");if(rl)rl.onclick=()=>{L={chartW:null,colW:{},paneH:null,termH:null};saveL();renderCols();applyLayout()}}
 addEventListener("resize",drawChart);
 function tick(){const t=new Intl.DateTimeFormat("vi-VN",{timeZone:"Asia/Ho_Chi_Minh",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date());$("#clock").innerHTML=t.replace(","," ")+"<small>GMT+7</small>"}
 tick();setInterval(tick,1000);
@@ -536,7 +554,7 @@ async function api(path,opt={}){const r=await fetch(API+path,Object.assign({},op
   if(r.status===401){store.set("t568-token",null);showLogin("Phiên đăng nhập đã hết, nhập lại mật khẩu.");throw new Error("401")}
   if(!r.ok)throw new Error((await r.json().catch(()=>({}))).error||("Lỗi máy chủ "+r.status));return r.json()}
 let pollT=null;
-async function refresh(){try{const d=await api("/api/trades?days=90");LIVE=d.trades||[];setMode("Live · cập nhật "+new Intl.DateTimeFormat("vi-VN",{timeZone:"Asia/Ho_Chi_Minh",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date()),"live");renderPicker();renderCols();renderCmp();drawChart()}
+async function refresh(){try{const d=await api("/api/trades?days=90");LIVE=d.trades||[];await Promise.all([loadQuotes(),loadBars(sym.id)]).catch(()=>{});setMode("Live · cập nhật "+new Intl.DateTimeFormat("vi-VN",{timeZone:"Asia/Ho_Chi_Minh",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date()),"live");renderWL();renderPicker();renderCols();renderCmp();drawChart()}
   catch(e){if(e.message!=="401")setMode("Mất kết nối máy chủ","err")}}
 function startPoll(){clearInterval(pollT);refresh();pollT=setInterval(refresh,Math.max(5,+CFG.pollSeconds||10)*1000)}
 function showLogin(msg){$("#login").hidden=false;$("#loginMsg").textContent=msg||"";clearInterval(pollT);setTimeout(()=>$("#pw").focus(),0)}

@@ -1,0 +1,44 @@
+// Signals Trader568VN – gửi giá realtime từ TradingView về terminal.
+//
+// Cách dùng (mỗi mã làm một lần):
+// 1. Mở chart mã cần theo dõi (vd GC1!, SI1!, HG1!, CL1!, BRN1!, DXY), chọn khung 1 phút.
+// 2. Pine Editor -> dán toàn bộ file này -> Add to chart.
+// 3. Tạo Alert: Condition = "T568 Giá realtime" -> "Any alert() function call".
+//    Expiration: Open-ended (không hết hạn) nếu gói TV cho phép.
+//    Notifications: bật Webhook URL = https://signals-trader568vn.lehoanglong2452004.workers.dev/webhook?key=<WEBHOOK_KEY>
+//    Ô Message để nguyên, nội dung do alert() bên dưới gửi.
+//
+// Mỗi nến 1 phút đóng, chỉ báo gửi 3 nến gần nhất (lần đầu gửi thêm lịch sử) về máy chủ.
+// Mỗi mã tốn 1 alert trong hạn mức gói TradingView.
+
+//@version=5
+indicator("T568 Giá realtime", overlay = true, max_bars_back = 500)
+
+backN = input.int(200, "Số nến lịch sử gửi lần đầu", minval = 3, maxval = 300)
+
+sym = syminfo.prefix + ":" + syminfo.ticker
+
+f_bar(int i) =>
+    "[" + str.tostring(time[i]) + "," + str.tostring(open[i]) + "," + str.tostring(high[i]) + "," +
+     str.tostring(low[i]) + "," + str.tostring(close[i]) + "," + str.tostring(nz(volume[i])) + "]"
+
+// Khối lượng của phiên hiện tại và giá đóng cửa phiên trước, cho bảng giá.
+dayVol = request.security(syminfo.tickerid, "D", volume)
+prevClose = request.security(syminfo.tickerid, "D", close[1], lookahead = barmerge.lookahead_on)
+
+var bool first = true
+
+if barstate.isrealtime and barstate.isconfirmed
+    n = first ? math.min(backN, bar_index + 1) : 3
+    // Gửi theo từng gói tối đa 50 nến để không vượt giới hạn độ dài alert.
+    for chunk = (n - 1) / 50 to 0
+        hi = math.min(n - 1, chunk * 50 + 49)
+        lo = chunk * 50
+        s = ""
+        for i = hi to lo
+            s := s + (s == "" ? "" : ",") + f_bar(i)
+        alert('{"event":"bar","symbol":"' + sym + '","tf":"' + timeframe.period + '","dv":' + str.tostring(nz(dayVol)) + ',"pc":' + str.tostring(nz(prevClose)) + ',"bars":[' + s + ']}', alert.freq_all)
+    first := false
+
+if timeframe.period != "1"
+    var label warn = label.new(bar_index, high, "T568: hãy để chart ở khung 1 phút", style = label.style_label_down, color = color.orange, textcolor = color.black)
