@@ -1,6 +1,8 @@
 // Signals Trader568VN – bộ nhận alert TradingView và API cho terminal.
 // Chạy trên Cloudflare Workers, lưu dữ liệu trong D1.
 
+import { STRATEGIES } from "./strategies.js";
+
 const enc = new TextEncoder();
 
 function json(data, status = 200, headers = {}) {
@@ -37,17 +39,18 @@ async function hmac(secret, msg) {
   return btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-async function makeToken(env) {
-  const exp = String(Date.now() + 7 * 24 * 3600 * 1000);
-  return exp + "." + (await hmac(env.SESSION_SECRET, exp));
+// Token: hạn.vai_trò.chữ_ký. Vai trò "admin" được chỉnh thông số chiến lược, "view" chỉ xem.
+async function makeToken(env, role) {
+  const head = String(Date.now() + 7 * 24 * 3600 * 1000) + "." + role;
+  return head + "." + (await hmac(env.SESSION_SECRET, head));
 }
 
 async function isAuthed(env, req) {
   const h = req.headers.get("authorization") || "";
   const token = h.startsWith("Bearer ") ? h.slice(7) : "";
-  const [exp, sig] = token.split(".");
-  if (!exp || !sig || Number(exp) < Date.now()) return false;
-  return safeEqual(sig, await hmac(env.SESSION_SECRET, exp));
+  const [exp, role, sig] = token.split(".");
+  if (!exp || !role || !sig || Number(exp) < Date.now()) return false;
+  return safeEqual(sig, await hmac(env.SESSION_SECRET, exp + "." + role)) ? role : false;
 }
 
 const num = (v) => (v === undefined || v === null || v === "" || isNaN(Number(v)) ? null : Number(v));
@@ -130,11 +133,13 @@ async function saveBars(env, body) {
   let rows = Array.isArray(body.bars) ? body.bars : [[body.t, body.o, body.h, body.l, body.c, body.v]];
   rows = rows.map((r) => r.map(num)).filter((r) => r[0] !== null && r[4] !== null).slice(-500);
   if (!rows.length) return json({ error: "Không có nến hợp lệ" }, 400);
-  const st = env.DB.prepare(
-    `INSERT INTO bars (symbol, t, o, h, l, c, v) VALUES (?, ?, ?, ?, ?, ?, ?)
+  rows = rows.map((r) => [r[0], r[1] ?? r[4], r[2] ?? r[4], r[3] ?? r[4], r[4], r[5] ?? 0]).sort((a, b) => a[0] - b[0]);
+  const batch = [env.DB.prepare(
+    `INSERT INTO bars (symbol, t, o, h, l, c, v)
+     SELECT ?, json_extract(value, '$[0]'), json_extract(value, '$[1]'), json_extract(value, '$[2]'), json_extract(value, '$[3]'), json_extract(value, '$[4]'), json_extract(value, '$[5]')
+     FROM json_each(?) WHERE true
      ON CONFLICT(symbol, t) DO UPDATE SET o = excluded.o, h = excluded.h, l = excluded.l, c = excluded.c, v = excluded.v`
-  );
-  const batch = rows.map((r) => st.bind(symbol, r[0], r[1] ?? r[4], r[2] ?? r[4], r[3] ?? r[4], r[4], r[5] ?? 0));
+  ).bind(symbol, JSON.stringify(rows))];
   // Giá cuối, khối lượng trong ngày (dv) và giá đóng cửa hôm trước (pc) do Pine gửi kèm.
   const last = rows[rows.length - 1];
   batch.push(env.DB.prepare(
@@ -145,7 +150,136 @@ async function saveBars(env, body) {
   // Giữ 10 ngày nến 1 phút cho mỗi mã.
   batch.push(env.DB.prepare(`DELETE FROM bars WHERE symbol = ? AND t < ?`).bind(symbol, Date.now() - 10 * 24 * 3600 * 1000));
   await env.DB.batch(batch);
-  return json({ ok: true, outcome: "bars:" + rows.length });
+  let eng = "";
+  try { eng = await runEngine(env, symbol, rows); } catch (e) { eng = " engine-error: " + e.message; }
+  return json({ ok: true, outcome: "bars:" + rows.length + eng });
+}
+
+// ---------------- Bộ máy chiến lược chạy trên máy chủ ----------------
+// Logic từng chiến lược nằm trong strategies.js (riêng tư). Ở đây chỉ gộp nến, gọi chiến lược và quản lý lệnh.
+
+function stratParams(id, raw) {
+  const p = {};
+  for (const d of STRATEGIES[id].params) {
+    let v = raw && raw[d.k] !== undefined && raw[d.k] !== null && raw[d.k] !== "" ? Number(raw[d.k]) : d.v;
+    if (!Number.isFinite(v)) v = d.v;
+    if (d.options) { if (!d.options.includes(v)) v = d.v; }
+    else { v = Math.min(d.max, Math.max(d.min, v)); if (d.step >= 1) v = Math.round(v); }
+    p[d.k] = v;
+  }
+  return p;
+}
+
+async function verOf(id, p) {
+  const h = new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(id + JSON.stringify(p))));
+  return "v" + [...h.slice(0, 3)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function loadCfgs(env, symbol) {
+  const { results } = await env.DB.prepare(`SELECT strategy, params, enabled FROM strat_cfg WHERE symbol = ?`).bind(symbol).all();
+  const rows = Object.fromEntries(results.map((r) => [r.strategy, r]));
+  const out = [];
+  for (const id of Object.keys(STRATEGIES)) {
+    const r = rows[id], p = stratParams(id, r ? JSON.parse(r.params || "{}") : null);
+    out.push({ id, p, ver: await verOf(id, p), enabled: r ? !!r.enabled : true });
+  }
+  return out;
+}
+
+function aggregate(src, tf, end) {
+  const m = tf * 60000, out = [];
+  let cur = null;
+  for (const b of src) {
+    const k = Math.floor(b.t / m) * m;
+    if (k + m > end) break;
+    if (!cur || cur.t !== k) { cur = { t: k, o: b.o, h: b.h, l: b.l, c: b.c, v: b.v || 0 }; out.push(cur); }
+    else { cur.h = Math.max(cur.h, b.h); cur.l = Math.min(cur.l, b.l); cur.c = b.c; cur.v += b.v || 0; }
+  }
+  return out;
+}
+
+async function runEngine(env, symbol, rows) {
+  const cfgs = (await loadCfgs(env, symbol)).filter((c) => c.enabled);
+  const ops = [], notes = [];
+  const { results: open } = await env.DB.prepare(
+    `SELECT * FROM trades WHERE symbol = ? AND status = 'open' AND ver IS NOT NULL`
+  ).bind(symbol).all();
+
+  // 1) Theo dõi SL / TP / hòa vốn trên từng nến 1 phút.
+  for (const t of open) {
+    const meta = JSON.parse(t.meta || "{}"), buy = t.side === "buy";
+    let sl = t.sl;
+    for (const [bt, , h, l] of rows) {
+      if (bt < t.opened_at) continue;
+      const hitSL = sl !== null && (buy ? l <= sl : h >= sl), hitTP = t.tp !== null && (buy ? h >= t.tp : l <= t.tp);
+      if (hitSL || hitTP) {
+        ops.push(env.DB.prepare(`UPDATE trades SET status = 'closed', exit_price = ?, result = ?, closed_at = ?, sl = ? WHERE id = ? AND status = 'open'`)
+          .bind(hitSL ? sl : t.tp, hitSL ? "sl" : "tp", bt + 60000, sl, t.id));
+        t.closed = true; notes.push(t.strategy + ":" + (hitSL ? "sl" : "tp"));
+        break;
+      }
+      if (meta.be && !meta.moved && meta.risk && (buy ? h >= t.entry + meta.risk : l <= t.entry - meta.risk)) {
+        sl = t.entry; meta.moved = 1;
+        ops.push(env.DB.prepare(`UPDATE trades SET sl = ?, meta = ? WHERE id = ?`).bind(sl, JSON.stringify(meta), t.id));
+      }
+    }
+    t.sl = sl;
+  }
+
+  // 2) Gộp nến 1 phút thành nến khung lớn khi một nến khung lớn vừa đóng (hoặc khi nhận lịch sử).
+  const end = rows[rows.length - 1][0] + 60000;
+  const tfs = [...new Set(cfgs.map((c) => c.p.tf))];
+  const closing = tfs.filter((tf) => end % (tf * 60000) === 0);
+  const rebuild = rows.length > 3 ? tfs : closing;
+  if (rebuild.length) {
+    const big = Math.max(...rebuild) * 60000, from = Math.floor(rows[0][0] / big) * big;
+    const { results: src } = await env.DB.prepare(`SELECT t, o, h, l, c, v FROM bars WHERE symbol = ? AND t >= ? AND t < ? ORDER BY t`).bind(symbol, from, end).all();
+    for (const tf of rebuild) {
+      const agg = aggregate(src, tf, end).map((b) => [b.t, b.o, b.h, b.l, b.c, b.v]);
+      if (!agg.length) continue;
+      ops.push(env.DB.prepare(
+        `INSERT INTO tfbars (symbol, tf, t, o, h, l, c, v)
+         SELECT ?, ?, json_extract(value, '$[0]'), json_extract(value, '$[1]'), json_extract(value, '$[2]'), json_extract(value, '$[3]'), json_extract(value, '$[4]'), json_extract(value, '$[5]')
+         FROM json_each(?) WHERE true
+         ON CONFLICT(symbol, tf, t) DO UPDATE SET o = excluded.o, h = excluded.h, l = excluded.l, c = excluded.c, v = excluded.v`
+      ).bind(symbol, tf, JSON.stringify(agg)));
+    }
+    if (ops.length) { await env.DB.batch(ops); ops.length = 0; }
+  }
+
+  // 3) Chạy chiến lược trên nến khung lớn vừa đóng.
+  for (const tf of closing) {
+    const { results } = await env.DB.prepare(`SELECT t, o, h, l, c, v FROM tfbars WHERE symbol = ? AND tf = ? ORDER BY t DESC LIMIT 450`).bind(symbol, tf).all();
+    const bars = results.reverse();
+    if (!bars.length || bars[bars.length - 1].t + tf * 60000 !== end) continue;
+    for (const c of cfgs.filter((x) => x.p.tf === tf)) {
+      const S = STRATEGIES[c.id];
+      if (bars.length < S.need(c.p)) continue;
+      const out = S.run(bars, c.p) || {}, px = bars[bars.length - 1].c;
+      let cur = open.find((t) => t.strategy === c.id && !t.closed);
+      if (cur) {
+        const buy = cur.side === "buy";
+        if ((buy && (out.exitBuy || out.entry?.side === "sell")) || (!buy && (out.exitSell || out.entry?.side === "buy"))) {
+          ops.push(env.DB.prepare(`UPDATE trades SET status = 'closed', exit_price = ?, result = 'exit', closed_at = ? WHERE id = ? AND status = 'open'`).bind(px, end, cur.id));
+          cur.closed = true; cur = null; notes.push(c.id + ":exit");
+        }
+      }
+      const e = out.entry;
+      if (!cur && e && Number.isFinite(e.sl) && Number.isFinite(e.tp) && (e.side === "buy" ? e.sl < px && e.tp > px : e.sl > px && e.tp < px)) {
+        const meta = { be: out.be ? 1 : 0, risk: Math.abs(px - e.sl) };
+        ops.push(env.DB.prepare(
+          `INSERT INTO trades (ext_id, strategy, symbol, side, status, entry, sl, tp, created_at, opened_at, ver, meta)
+           SELECT NULL, ?, ?, ?, 'open', ?, ?, ?, ?, ?, ?, ?
+           WHERE NOT EXISTS (SELECT 1 FROM trades WHERE strategy = ? AND symbol = ? AND created_at = ?)`
+        ).bind(c.id, symbol, e.side, px, e.sl, e.tp, end, end, c.ver, JSON.stringify(meta), c.id, symbol, end));
+        ops.push(env.DB.prepare(`INSERT OR IGNORE INTO strat_vers (strategy, symbol, ver, params, created_at) VALUES (?, ?, ?, ?, ?)`)
+          .bind(c.id, symbol, c.ver, JSON.stringify(c.p), Date.now()));
+        notes.push(c.id + ":" + e.side);
+      }
+    }
+  }
+  if (ops.length) await env.DB.batch(ops);
+  return notes.length ? " " + notes.join(",") : "";
 }
 
 async function webhook(env, req, url) {
@@ -187,8 +321,13 @@ export default {
       if (url.pathname === "/api/login" && req.method === "POST") {
         const { password } = await req.json().catch(() => ({}));
         if (!env.VIEW_PASSWORD || !env.SESSION_SECRET) return json({ error: "Máy chủ chưa đặt mật khẩu" }, 500, cors);
-        if (!safeEqual(String(password || ""), env.VIEW_PASSWORD)) return json({ error: "Sai mật khẩu" }, 401, cors);
-        return json({ token: await makeToken(env) }, 200, cors);
+        const pw = String(password || "");
+        // Có ADMIN_PASSWORD: mật khẩu đó được chỉnh thông số, VIEW_PASSWORD chỉ xem. Chưa có: VIEW_PASSWORD được toàn quyền.
+        let role = null;
+        if (env.ADMIN_PASSWORD && safeEqual(pw, env.ADMIN_PASSWORD)) role = "admin";
+        else if (safeEqual(pw, env.VIEW_PASSWORD)) role = env.ADMIN_PASSWORD ? "view" : "admin";
+        if (!role) return json({ error: "Sai mật khẩu" }, 401, cors);
+        return json({ token: await makeToken(env, role), role }, 200, cors);
       }
 
       if (url.pathname === "/api/trades" && req.method === "GET") {
@@ -196,7 +335,7 @@ export default {
         const days = Math.min(365, Math.max(1, Number(url.searchParams.get("days")) || 90));
         const since = Date.now() - days * 24 * 3600 * 1000;
         const { results } = await env.DB.prepare(
-          `SELECT id, strategy, symbol, side, status, entry, sl, tp, exit_price, result, created_at, opened_at, closed_at
+          `SELECT id, strategy, symbol, side, status, entry, sl, tp, exit_price, result, created_at, opened_at, closed_at, ver
            FROM trades WHERE created_at >= ? OR status IN ('open', 'pending') ORDER BY id`
         ).bind(since).all();
         return json({ trades: results }, 200, cors);
@@ -224,6 +363,47 @@ export default {
           for (const q of results) quotes[q.symbol] = { t: q.t, c: q.c, dv: q.dv, pc: q.pc };
         }
         return json({ quotes }, 200, cors);
+      }
+
+      if (url.pathname === "/api/strategies" && req.method === "GET") {
+        const role = await isAuthed(env, req);
+        if (!role) return json({ error: "Cần đăng nhập" }, 401, cors);
+        const symbol = String(url.searchParams.get("symbol") || "").toUpperCase();
+        const cfgs = await loadCfgs(env, symbol);
+        const have = {};
+        for (const tf of [...new Set(cfgs.map((c) => c.p.tf))]) {
+          const r = await env.DB.prepare(`SELECT COUNT(*) n FROM (SELECT 1 FROM tfbars WHERE symbol = ? AND tf = ? LIMIT 450)`).bind(symbol, tf).first();
+          have[tf] = r ? r.n : 0;
+        }
+        const { results: vers } = await env.DB.prepare(`SELECT strategy, ver, params, created_at FROM strat_vers WHERE symbol = ? ORDER BY created_at`).bind(symbol).all();
+        const strategies = cfgs.map((c) => {
+          const S = STRATEGIES[c.id];
+          return {
+            id: c.id, name: S.name, ver: c.ver, enabled: c.enabled, logic: S.describe(c.p),
+            params: S.params.map((d) => ({ ...d, v: c.p[d.k], def: d.v })),
+            warm: { tf: c.p.tf, have: have[c.p.tf] || 0, need: S.need(c.p) },
+            vers: vers.filter((v) => v.strategy === c.id).map((v) => ({ ver: v.ver, params: JSON.parse(v.params), created_at: v.created_at })),
+          };
+        });
+        return json({ role, symbol, strategies }, 200, cors);
+      }
+
+      if (url.pathname === "/api/strategies" && req.method === "POST") {
+        const role = await isAuthed(env, req);
+        if (!role) return json({ error: "Cần đăng nhập" }, 401, cors);
+        if (role !== "admin") return json({ error: "Chỉ quản trị mới được chỉnh thông số" }, 403, cors);
+        const b = await req.json().catch(() => ({}));
+        const id = String(b.strategy || ""), symbol = String(b.symbol || "").toUpperCase();
+        if (!STRATEGIES[id] || !symbol) return json({ error: "Thiếu chiến lược hoặc mã" }, 400, cors);
+        const p = stratParams(id, b.params || {}), ver = await verOf(id, p), enabled = b.enabled === false ? 0 : 1;
+        await env.DB.batch([
+          env.DB.prepare(`INSERT INTO strat_cfg (strategy, symbol, params, enabled, updated_at) VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(strategy, symbol) DO UPDATE SET params = excluded.params, enabled = excluded.enabled, updated_at = excluded.updated_at`)
+            .bind(id, symbol, JSON.stringify(p), enabled, Date.now()),
+          env.DB.prepare(`INSERT OR IGNORE INTO strat_vers (strategy, symbol, ver, params, created_at) VALUES (?, ?, ?, ?, ?)`)
+            .bind(id, symbol, ver, JSON.stringify(p), Date.now()),
+        ]);
+        return json({ ok: true, ver, params: p }, 200, cors);
       }
 
       return json({ error: "Không tìm thấy" }, 404, cors);

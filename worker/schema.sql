@@ -40,3 +40,25 @@ CREATE TABLE IF NOT EXISTS quotes (
   dv      REAL,                             -- khối lượng trong ngày
   pc      REAL                              -- giá đóng cửa phiên trước
 );
+
+-- ===== Chiến lược chạy trên máy chủ =====
+ALTER TABLE trades ADD COLUMN ver TEXT;    -- bộ thông số tạo ra lệnh (NULL = lệnh từ alert TradingView)
+ALTER TABLE trades ADD COLUMN meta TEXT;   -- JSON: hòa vốn, khoảng rủi ro ban đầu
+
+-- Nến khung lớn gộp từ nến 1 phút (tf tính bằng phút).
+CREATE TABLE IF NOT EXISTS tfbars (
+  symbol TEXT NOT NULL, tf INTEGER NOT NULL, t INTEGER NOT NULL,
+  o REAL, h REAL, l REAL, c REAL, v REAL,
+  PRIMARY KEY (symbol, tf, t)
+);
+-- Thông số đang dùng của từng chiến lược trên từng mã.
+CREATE TABLE IF NOT EXISTS strat_cfg (
+  strategy TEXT NOT NULL, symbol TEXT NOT NULL, params TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1, updated_at INTEGER,
+  PRIMARY KEY (strategy, symbol)
+);
+-- Lịch sử các bộ thông số (mỗi lần đổi thông số là một bộ mới).
+CREATE TABLE IF NOT EXISTS strat_vers (
+  strategy TEXT NOT NULL, symbol TEXT NOT NULL, ver TEXT NOT NULL, params TEXT NOT NULL, created_at INTEGER,
+  PRIMARY KEY (strategy, symbol, ver)
+);

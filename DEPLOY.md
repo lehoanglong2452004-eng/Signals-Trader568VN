@@ -53,3 +53,13 @@ Giá lấy từ chính tài khoản TradingView của bạn qua chỉ báo `pine
 
 Lần đầu alert chạy, chỉ báo gửi kèm 200 nến gần nhất; sau đó mỗi phút gửi nến mới. Máy chủ giữ 10 ngày nến 1 phút và tự gộp lên các khung lớn hơn khi xem.
 Lưu ý: data CME trên tài khoản TradingView chỉ dùng cho cá nhân, không chia sẻ trang có giá này cho người khác.
+
+## Chiến lược chạy trên máy chủ
+
+Máy chủ tự tính tín hiệu từ nến 1 phút (không cần alert tín hiệu trên TradingView, chỉ cần alert giá ở trên).
+
+- Logic chiến lược nằm trong `worker/src/strategies.js`. File này **không có trên GitHub** (đã đưa vào `.gitignore`); bản gốc giữ ở `E:\Trader568VN\private\strategies.js`. Khi cài lại Worker phải chép file này vào `worker/src/` trước khi deploy.
+- Thông số chỉnh trên terminal, riêng cho từng mã. Mỗi bộ thông số có mã riêng (vd `v3a91c0`), lịch sử lệnh tách theo bộ.
+- Mặc định ai đăng nhập bằng `VIEW_PASSWORD` cũng được chỉnh thông số. Muốn tách quyền: thêm secret `ADMIN_PASSWORD`; khi đó chỉ mật khẩu này được chỉnh, `VIEW_PASSWORD` chỉ xem.
+- Chiến lược cần đủ số nến của khung tính (vd 202 nến 15 phút cho EMA 200) mới bắt đầu ra tín hiệu; terminal hiện tiến độ khởi động.
+- Cập nhật database lần đầu (đã chạy): các lệnh `ALTER TABLE` và bảng `tfbars`, `strat_cfg`, `strat_vers` ở cuối `worker/schema.sql`.
