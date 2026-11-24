@@ -60,6 +60,7 @@ select.contract{background:var(--panel2);color:var(--fg);border:1px solid var(--
 .menu label small{margin-left:auto;color:var(--muted);font-family:var(--cond)}
 .menu input[type=checkbox]{accent-color:var(--amber)}
 .menu .sw{width:10px;height:10px;display:inline-block}
+.icobtn{background:none;border:1px solid transparent;padding:2px 3px;cursor:pointer;display:inline-flex;align-items:center;opacity:.3;margin-left:2px}.tvbar .icobtn.on,.tvbar .icobtn{color:inherit}.tvbar .icobtn.on{opacity:1;border-color:var(--line);background:#111}.tvbar .icobtn:not(.on){background:none}.icobtn:hover{opacity:1}
 .menu .crow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 12px;font-size:12px}
 .menu input[type=color]{width:40px;height:22px;border:1px solid var(--line);background:none;padding:0}
 .menu .hint{padding:4px 12px 2px;font-size:11px;color:var(--muted);font-family:var(--cond);max-width:300px}
@@ -194,6 +195,8 @@ body.resizing{user-select:none}
       <span class="sep"></span>
       <button class="menu-btn" id="indBtn" aria-expanded="false">Chỉ báo ▾</button>
       <button class="menu-btn" id="setBtn" aria-expanded="false">Màu nến ▾</button>
+      <button class="icobtn on" id="asBtn" aria-pressed="true" title="Tự cuộn tới nến mới nhất"><svg width="22" height="14" viewBox="0 0 22 14" aria-hidden="true"><g stroke="#22c55e" stroke-width="1.4" fill="none"><path d="M2 2v10M5 4v6M3.5 3v8"/><path d="M8 7h11M15 3.5L19 7l-4 3.5"/></g></svg></button>
+      <button class="icobtn on" id="csBtn" aria-pressed="true" title="Chừa khoảng trống bên phải chart"><svg width="22" height="14" viewBox="0 0 22 14" aria-hidden="true"><g stroke="#3b82f6" stroke-width="1.4" fill="none"><path d="M17 2v10M20 4v6M18.5 3v8"/><path d="M14 7H3M7 3.5L3 7l4 3.5"/></g></svg></button>
       <span class="ohlc num" id="ohlc"></span>
       <div class="menu" id="indMenu" hidden></div>
       <div class="menu" id="setMenu" hidden>
@@ -228,7 +231,7 @@ body.resizing{user-select:none}
     <h2>Chart</h2>
     <ul>
       <li>Chart hiện là minh họa với giá mẫu; nguồn giá thật sẽ chọn sau. Giá realtime xem trên TradingView qua nút "Mở trên TradingView".</li>
-      <li>Thanh chart chỉ có khung thời gian, không có công cụ vẽ. Kéo chart để di chuyển, cuộn chuột để phóng to/thu nhỏ, cuộn trên trục giá để giãn giá, nhấp đúp để tự vừa màn hình.</li>
+      <li>Thanh chart chỉ có khung thời gian, không có công cụ vẽ. Giá luôn tự vừa khung. Kéo ngang để xem nến cũ, cuộn chuột để phóng to/thu nhỏ, nhấp đúp để về mặc định. Nút xanh lá: tự cuộn tới nến mới nhất. Nút xanh dương: chừa khoảng trống bên phải.</li>
       <li>Menu "Chỉ báo" có sẵn 10 chỉ báo phổ biến. Chỉ báo tự viết sẽ bổ sung vào menu này sau.</li>
       <li>Volume là panel riêng màu xanh dương cố định, tắt bằng dấu × trên panel và bật lại trong menu "Chỉ báo".</li>
       <li>Nến mặc định tăng trắng, giảm đỏ. Đổi trong "Màu nến".</li>
@@ -385,11 +388,11 @@ function studies(b){const C=b.map(x=>x.c),H=b.map(x=>x.h),L=b.map(x=>x.l),o={};
 
 function drawChart(){const cv=$("#chart"),r=cv.getBoundingClientRect();if(!r.width)return;const dpr=devicePixelRatio||1;cv.width=r.width*dpr;cv.height=r.height*dpr;
   const c=cv.getContext("2d");c.scale(dpr,dpr);const W=r.width,H=r.height,all=bars(),pad=70,bot=22;
-  const n=Math.max(15,Math.min(all.length-210,Math.round(V.count||Math.floor((W-pad)/8))));V.off=Math.max(-Math.floor(n*.8),Math.min(all.length-210-n,V.off));const st0=all.length-n-Math.max(0,Math.round(V.off)),rightPad=Math.max(0,-Math.round(V.off)),B=all.slice(st0,st0+n-rightPad),S=studies(all),cut=a=>a.slice(st0,st0+n-rightPad);
+  const n=Math.max(15,Math.min(all.length-210,Math.round(V.count||Math.floor((W-pad)/8))));const prevShift=V.shift;V.shift=V.cs?Math.round(n*.15):0;if(V.off===-prevShift||V.as)V.off=-V.shift;V.off=Math.max(-Math.floor(n*.8),Math.min(all.length-210-n,V.off));const st0=all.length-n-Math.max(0,Math.round(V.off)),rightPad=Math.max(0,-Math.round(V.off)),B=all.slice(st0,st0+n-rightPad),S=studies(all),cut=a=>a.slice(st0,st0+n-rightPad);
   const panes=STUD.filter(s=>s.kind==="pane"&&on.has(s.id)),ph=L.paneH?Math.min(L.paneH,(H-bot-160)/Math.max(1,panes.length)):Math.min(110,(H-bot)*.18),priceH=H-bot-ph*panes.length,bw=(W-pad)/n,f=dp(sym.px),X=i=>i*bw+bw/2;
   c.fillStyle=css("--bg");c.fillRect(0,0,W,H);c.font="10px Roboto Mono, monospace";
   let mx=Math.max(...B.map(b=>b.h)),mn=Math.min(...B.map(b=>b.l));if(on.has("bb")){const u=cut(S.bbU).filter(x=>x),l=cut(S.bbL).filter(x=>x);mx=Math.max(mx,...u);mn=Math.min(mn,...l)}
-  const pr=(mx-mn)*.06;mx+=pr;mn-=pr;if(!V.auto){const cMid=(mx+mn)/2+V.yShift,half=(mx-mn)/2*V.yZoom;mx=cMid+half;mn=cMid-half}const top=22,Y=v=>top+(mx-v)/(mx-mn)*(priceH-top-6);
+  const pr=(mx-mn)*.06;mx+=pr;mn-=pr;if(false){const cMid=(mx+mn)/2+V.yShift,half=(mx-mn)/2*V.yZoom;mx=cMid+half;mn=cMid-half}const top=22,Y=v=>top+(mx-v)/(mx-mn)*(priceH-top-6);
   c.strokeStyle=css("--grid");c.lineWidth=1;c.fillStyle=css("--muted");
   for(let k=0;k<=6;k++){const val=mn+(mx-mn)*k/6,yy=Y(val);c.beginPath();c.moveTo(0,yy);c.lineTo(W-pad,yy);c.stroke();c.fillText(val.toFixed(f),W-pad+6,yy+3)}
   for(let k=1;k<6;k++){const xx=(W-pad)*k/6;c.beginPath();c.moveTo(xx,0);c.lineTo(xx,H-bot);c.stroke()}
@@ -435,14 +438,17 @@ drag($("#gutMain"),"x",()=>$(".chartbox").getBoundingClientRect().width,w=>{w=Ma
 drag($("#gutH"),"y",()=>$(".term").getBoundingClientRect().height,h=>{L.termH=Math.max(420,h);applyLayout()});
 function applyLayout(){$(".chartbox").style.flex=L.chartW?`0 0 ${L.chartW}px`:"";$(".term").style.height=L.termH?L.termH+"px":"";drawChart()}
 // kéo ranh giới panel giá / panel dưới
-const V={off:0,count:null,yShift:0,yZoom:1,auto:true};
-const resetView=()=>{Object.assign(V,{off:0,count:null,yShift:0,yZoom:1,auto:true});drawChart()};
+const V={off:0,count:null,yShift:0,yZoom:1,auto:true,as:true,cs:true,shift:0};
+const resetView=()=>{Object.assign(V,{off:-V.shift,count:null,yShift:0,yZoom:1,auto:true});drawChart()};
+const toEnd=()=>{V.off=-V.shift;drawChart()};
+$("#asBtn").onclick=e=>{V.as=!V.as;e.currentTarget.classList.toggle("on",V.as);e.currentTarget.setAttribute("aria-pressed",V.as);if(V.as)toEnd()};
+$("#csBtn").onclick=e=>{const atEnd=Math.round(V.off)<=0;V.cs=!V.cs;e.currentTarget.classList.toggle("on",V.cs);e.currentTarget.setAttribute("aria-pressed",V.cs);drawChart();if(atEnd||V.as)toEnd()};
 const cvs=$("#chart");let pd=null,pan=null;
 cvs.addEventListener("dblclick",resetView);
 cvs.addEventListener("wheel",e=>{e.preventDefault();if(!lay)return;const x=e.clientX-cvs.getBoundingClientRect().left,k=e.deltaY>0?1.1:1/1.1;
-  if(x>lay.W-lay.pad){V.auto=false;V.yZoom=Math.max(.05,Math.min(20,V.yZoom*k))}else{V.count=Math.max(15,Math.min(480,(V.count||Math.floor((lay.W-lay.pad)/8))*k))}drawChart()},{passive:false});
+  {V.count=Math.max(15,Math.min(480,(V.count||Math.floor((lay.W-lay.pad)/8))*k))}drawChart()},{passive:false});
 const nearPane=y=>lay&&lay.np&&Math.abs(y-lay.priceH)<6;
-cvs.addEventListener("pointermove",e=>{const rc=cvs.getBoundingClientRect(),y=e.clientY-rc.top;if(pan){const dx=e.clientX-pan.x0,dy=y-pan.y0;V.off=pan.off+dx/lay.bw;if(pan.inPrice&&Math.abs(dy)>2){V.auto=false;V.yShift=pan.ys+dy*lay.ppp*V.yZoom}drawChart();return}if(pd){const d=y-pd.y0;L.paneH=Math.max(50,Math.min(260,pd.ph-d/lay.np));drawChart();return}cvs.style.cursor=nearPane(y)?"row-resize":(lay&&e.clientX-rc.left>lay.W-lay.pad?"ns-resize":"grab")});
+cvs.addEventListener("pointermove",e=>{const rc=cvs.getBoundingClientRect(),y=e.clientY-rc.top;if(pan){const dx=e.clientX-pan.x0,dy=y-pan.y0;V.off=pan.off+dx/lay.bw;if(V.as&&Math.abs(dx)>3){V.as=false;const b=$("#asBtn");b.classList.remove("on");b.setAttribute("aria-pressed",false)}drawChart();return}if(pd){const d=y-pd.y0;L.paneH=Math.max(50,Math.min(260,pd.ph-d/lay.np));drawChart();return}cvs.style.cursor=nearPane(y)?"row-resize":"grab"});
 cvs.addEventListener("pointerdown",e=>{const y=e.clientY-cvs.getBoundingClientRect().top;if(nearPane(y)){pd={y0:y,ph:lay.ph};cvs.setPointerCapture(e.pointerId);document.body.classList.add("resizing")}else if(lay){pan={x0:e.clientX,y0:y,off:V.off,ys:V.yShift,inPrice:y<lay.priceH};cvs.setPointerCapture(e.pointerId);cvs.style.cursor="grabbing";document.body.classList.add("resizing")}});
 cvs.addEventListener("pointerup",()=>{if(pan){pan=null;document.body.classList.remove("resizing");cvs.style.cursor="grab"}if(pd){pd=null;document.body.classList.remove("resizing");saveL()}});
 function renderTF(){$("#tf").innerHTML=TF.map(t=>`<button class="${t===tf?'on':''}">${t}</button>`).join("");$("#tf").querySelectorAll("button").forEach(b=>b.onclick=()=>{tf=b.textContent;renderTF();resetView()})}
