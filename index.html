@@ -201,7 +201,7 @@ body.resizing{user-select:none}
 .menu .xrow{display:flex;align-items:center}.menu .xrow label{flex:1}.menu .xg{background:none;border:0;color:var(--muted);cursor:pointer;font-size:13px;padding:4px 10px}.menu .xg:hover{color:var(--amber)}
 .menu .xh4{display:flex;justify-content:space-between;align-items:center}.menu .xh4 em{font-style:normal;color:var(--muted);text-transform:none;letter-spacing:0}
 .panehdr .xg{background:none;border:0;color:var(--muted);cursor:pointer;font-size:12px;padding:0 2px}.panehdr .xg:hover{color:var(--amber)}.panehdr .xn{color:var(--amber)}
-.xtbl{position:absolute;z-index:3;opacity:.92;pointer-events:none;border-collapse:collapse;font-family:var(--mono,"Roboto Mono",monospace);max-width:calc(100% - 90px);overflow:hidden}
+.xtbl{position:absolute;z-index:3;width:max-content;opacity:.92;pointer-events:none;border-collapse:collapse;font-family:var(--mono,"Roboto Mono",monospace);max-width:calc(100% - 90px);overflow:hidden}
 .xtbl td{padding:1px 5px;border:1px solid var(--line);white-space:nowrap}.xtbl.sz-tiny{font-size:9px}.xtbl.sz-small{font-size:10px}.xtbl.sz-normal{font-size:11.5px}.xtbl td{line-height:1.25}
 #xtip{position:absolute;z-index:6;pointer-events:none;background:#0b0e14;border:1px solid var(--amber);color:var(--fg);font-size:11px;padding:6px 8px;white-space:pre;max-width:320px;box-shadow:0 6px 20px rgb(0 0 0 / .6)}
 .xset{position:fixed;inset:0;z-index:60;background:rgb(0 0 0 / .55);display:flex;align-items:center;justify-content:center;padding:12px}
@@ -504,7 +504,7 @@ function drawChart(){const cv=$("#chart"),r=cv.getBoundingClientRect();if(!r.wid
     if(RB[sym.id]?.done)c.fillText("Gắn chỉ báo pine/gia-realtime.pine cho mã này trên TradingView (khung 1 phút) và tạo alert webhook.",W/2,H/2+12);
     c.textAlign="start";$("#hdrs").innerHTML="";$("#ohlc").textContent="";lay=null;return}
   const avail=all.length-WARM,n=Math.max(Math.min(15,avail),Math.min(avail,Math.round(V.count||Math.floor((W-pad)/8))));const prevShift=V.shift;V.shift=V.cs?Math.round(n*.15):0;if(V.off===-prevShift||V.as)V.off=-V.shift;V.off=Math.max(-Math.floor(n*.8),Math.min(avail-n,V.off));const rightPad=Math.max(0,-Math.round(V.off)),st0=all.length-(n-rightPad)-Math.max(0,Math.round(V.off)),B=all.slice(st0,st0+n-rightPad),S=studies(all),cut=a=>a.slice(st0,st0+n-rightPad);
-  const panes=STUD.filter(s=>s.kind==="pane"&&on.has(s.id)),ph=L.paneH?Math.min(L.paneH,(H-bot-160)/Math.max(1,panes.length)):Math.min(110,(H-bot)*.18),priceH=H-bot-ph*panes.length,slots=Math.max(n,LIVE?Math.round(V.count||Math.floor((W-pad)/8)):n),bw=(W-pad)/slots,f=dp(sym.px),X=i=>(i+slots-n)*bw+bw/2;
+  const panes=[...STUD.filter(s=>s.kind==="pane"&&on.has(s.id)),...(LIVE?[...xon].filter(id=>XR[id]&&XR[id].out&&XR[id].out.pane&&XI.find(x=>x.id===id)).map(id=>({id:"x:"+id,xid:id,name:XI.find(x=>x.id===id).short})):[])],ph=L.paneH?Math.min(L.paneH,(H-bot-160)/Math.max(1,panes.length)):Math.min(110,(H-bot)*.18),priceH=H-bot-ph*panes.length,slots=Math.max(n,LIVE?Math.round(V.count||Math.floor((W-pad)/8)):n),bw=(W-pad)/slots,f=dp(sym.px),X=i=>(i+slots-n)*bw+bw/2;
   c.fillStyle=css("--bg");c.fillRect(0,0,W,H);c.font="10px Roboto Mono, monospace";
   let mx=Math.max(...B.map(b=>b.h)),mn=Math.min(...B.map(b=>b.l));if(on.has("bb")){const u=cut(S.bbU).filter(x=>x),l=cut(S.bbL).filter(x=>x);mx=Math.max(mx,...u);mn=Math.min(mn,...l)}
   const pr=(mx-mn)*.06;mx+=pr;mn-=pr;if(false){const cMid=(mx+mn)/2+V.yShift,half=(mx-mn)/2*V.yZoom;mx=cMid+half;mn=cMid-half}const top=22,Y=v=>top+(mx-v)/(mx-mn)*(priceH-top-6);
@@ -542,6 +542,16 @@ function drawChart(){const cv=$("#chart"),r=cv.getBoundingClientRect();if(!r.wid
     const sc=(lo,hi)=>v=>y0+18+(hi-v)/(hi-lo||1)*(ph-24),lab=(v,Yf,t)=>{c.fillStyle=css("--muted");c.fillText(t??v.toFixed(2),W-pad+6,Yf(v)+3)};
     const dash=(l,Yf)=>{c.strokeStyle=css("--line");c.setLineDash([3,3]);c.beginPath();c.moveTo(0,Yf(l));c.lineTo(W-pad,Yf(l));c.stroke();c.setLineDash([]);lab(l,Yf,String(l))};
     let name=p.name;
+    if(p.xid){const R0=XR[p.xid],P=R0.out.pane,N=all.length;name=esc(P.name||p.name);let off=0;{let lo=0,hi=N-1;while(lo<hi){const m=(lo+hi)>>1;if(all[m].t<R0.t0)lo=m+1;else hi=m}off=lo}
+      const VI=i=>st0+i-off,nB=B.length;let lo=Infinity,hi=-Infinity;for(const pt of P.plots||[])for(let i=0;i<nB;i++){const k=VI(i),v=k<0?null:pt.v[k];if(v!=null){if(v<lo)lo=v;if(v>hi)hi=v}}
+      for(const h of P.hl||[]){lo=Math.min(lo,h.y);hi=Math.max(hi,h.y)}if(!isFinite(lo)){lo=-1;hi=1}const pr2=(hi-lo)*.06||1;lo-=pr2;hi+=pr2;const Yp=sc(lo,hi);
+      c.save();c.beginPath();c.rect(0,y0+1,W-pad,ph-1);c.clip();
+      for(const h of P.hl||[]){c.strokeStyle=h.c||css("--line");c.lineWidth=h.w||1;c.setLineDash(xdash(h.s));c.beginPath();c.moveTo(0,Yp(h.y));c.lineTo(W-pad,Yp(h.y));c.stroke();c.setLineDash([]);c.lineWidth=1}
+      for(const pt of P.plots||[]){if(pt.st==="columns"){const z=Yp(Math.max(lo,Math.min(hi,0)));for(let i=0;i<nB;i++){const k=VI(i),v=k<0?null:pt.v[k];if(v==null)continue;const col=(pt.cs&&pt.cs[k])||pt.c;if(!col)continue;const yv=Yp(v);c.fillStyle=col;c.fillRect(X(i)-bw*.35,Math.min(z,yv),bw*.7,Math.max(1,Math.abs(yv-z)))}continue}
+        c.lineWidth=pt.w||1;for(let i=1;i<nB;i++){const a=VI(i-1),b2=VI(i);if(a<0||pt.v[a]==null||pt.v[b2]==null)continue;c.strokeStyle=(pt.cs&&pt.cs[b2])||pt.c;c.beginPath();c.moveTo(X(i-1),Yp(pt.v[a]));c.lineTo(X(i),Yp(pt.v[b2]));c.stroke()}c.lineWidth=1}
+      c.restore();let ly=-99;for(const h of [...(P.hl||[])].sort((a,b)=>b.y-a.y)){const yy=Yp(h.y);if(yy-ly>=10){lab(h.y,Yp,String(h.y));ly=yy}}
+      for(const pt of P.plots||[]){const k=VI(nB-1),v=k<0?null:pt.v[k];if(v!=null)name+=` <span style="color:${esc((pt.cs&&pt.cs[k])||pt.c||"var(--fg)")}">${v.toFixed(P.dec??2)}</span>`}
+      hdr.push({y:y0+2,html:`<b>${name}</b><button class="xg" data-xgh="${p.xid}" title="Cài đặt ${esc(p.name)}" aria-label="Cài đặt ${esc(p.name)}">⚙</button><button data-xoff="${p.xid}" aria-label="Tắt ${esc(p.name)}">×</button>`});return}
     if(p.id==="vol"){const vm=Math.max(...B.map(b=>b.v)),Yv=v=>y0+ph-2-(v/vm)*(ph-20);c.fillStyle=css("--vol");B.forEach((b,i)=>c.fillRect(X(i)-bw*.35,Yv(b.v),bw*.7,y0+ph-2-Yv(b.v)));lab(vm,Yv,Math.round(vm).toLocaleString("en-US"));name+=` <span class="muted">${Math.round(last.v).toLocaleString("en-US")}</span>`}
     if(p.id==="rsi"){const Yr=sc(0,100);dash(30,Yr);dash(70,Yr);line(cut(S.rsi),css("--s3"),Yr,1.3);name+=` <span style="color:var(--s3)">${cut(S.rsi)[n-1].toFixed(1)}</span>`}
     if(p.id==="macd"){const a=cut(S.macd),s=cut(S.sig),h=cut(S.hist),ex=Math.max(...a.map(Math.abs),...h.map(Math.abs)),Ym=sc(-ex,ex);h.forEach((v,i)=>{c.fillStyle=v>=0?"rgba(61,220,132,.55)":"rgba(255,77,77,.55)";c.fillRect(X(i)-bw*.35,Math.min(Ym(0),Ym(v)),bw*.7,Math.abs(Ym(v)-Ym(0)))});line(a,css("--s2"),Ym,1.3);line(s,css("--s1"),Ym,1.3);lab(0,Ym,"0")}
@@ -599,8 +609,14 @@ function runX(all){const src=(RB[sym.id]||{bars:[]}).bars;if(!src.length||!all.l
     if((XR[id]&&XR[id].key===key)||xbusy[id]===key)continue;xbusy[id]=key;
     const htf={};for(const k of I.needs[tfSec]||[])htf[k]=agg(src,XTF[k]).slice(-2500).map(BA);
     api("/api/ind",{method:"POST",body:JSON.stringify({id,p,symbol:sym.id,tf,tfSec,mintick:Math.pow(10,-dec),dec,lastClosed,pointvalue:PV(sym.id),bars:bars.map(BA),htf})})
-      .then(out=>{XR[id]={key,out,t0:bars[0].t}}).catch(e=>{XR[id]={key,out:{note:"Không tính được ("+e.message+")"},t0:bars[0].t}})
+      .then(out=>{xExpand(out);XR[id]={key,out,t0:bars[0].t}}).catch(e=>{XR[id]={key,out:{note:"Không tính được ("+e.message+")"},t0:bars[0].t}})
       .finally(()=>{if(xbusy[id]===key)delete xbusy[id];drawChart()})}}
+// Máy chủ gom màu lặp lại thành bảng màu (pal + ci): mở lại thành mảng màu từng nến
+// Mảng số gửi một lần trong ser, hình trỏ tới bằng số thứ tự; ống 3D gửi đường giữa + nửa bề rộng
+function xExpand(o){if(!o)return;const S=o.ser||[],R=a=>typeof a==="number"?S[a]:a;
+  for(const x of [...(o.plots||[]),...((o.pane&&o.pane.plots)||[])]){x.v=R(x.v);if(x.v0!=null)x.v0=R(x.v0)}
+  for(const x of o.fills||[]){if(x.mid!=null){const M=R(x.mid),Hw=R(x.hw),at=f=>M.map((m,i)=>m==null||Hw[i]==null?null:m+Hw[i]*f);x.a=at(x.fa);x.b=at(x.fb)}else{x.a=R(x.a);x.b=R(x.b)}}
+  for(const x of [...(o.plots||[]),...(o.fills||[]),...((o.pane&&o.pane.plots)||[])])if(x.pal&&x.ci){x.cs=x.ci.map(k=>k<0?null:x.pal[k]);delete x.ci}delete o.ser}
 const XFS={tiny:9,small:10.5,normal:12,large:14,huge:18,auto:10.5};
 const xdash=s=>s==="dashed"?[6,4]:s==="dotted"?[2,3]:[];
 // Vẽ toàn bộ hình của chỉ báo lên vùng giá. g = {all,st0,X,Y,bw,tfMs,W,pad,priceH}
@@ -628,7 +644,9 @@ function drawX(c,g){XTIPS=[];const {all,st0,X,Y,bw,tfMs}=g,N=all.length;if(!N)re
       if(pl.fill&&pl.closed){c.fillStyle=pl.fill;c.fill()}c.strokeStyle=pl.c;c.lineWidth=pl.w||1;c.setLineDash(xdash(pl.s));c.stroke();c.setLineDash([]);c.lineWidth=1}
     // đường chỉ báo
     for(const pt of o.plots||[]){const n=Math.min(g.n,N-st0);c.lineWidth=pt.w||1;
+      if(pt.st==="bars"){for(let i=0;i<n;i++){const k=VI(i);if(k<0||pt.v[k]==null||!pt.v0||pt.v0[k]==null)continue;const y0=Y(pt.v[k]),y1=Y(pt.v0[k]);c.fillStyle=(pt.cs&&pt.cs[k])||pt.c;c.fillRect(X(i)-bw*.35,Math.min(y0,y1),bw*.7,Math.max(1,Math.abs(y1-y0)))}continue}
       if(pt.st==="circles"){for(let i=0;i<n;i++){const v=VI(i);if(v<0||pt.v[v]==null)continue;c.fillStyle=(pt.cs&&pt.cs[v])||pt.c;c.beginPath();c.arc(X(i),Y(pt.v[v]),Math.max(1.5,pt.w||1),0,7);c.fill()}continue}
+      if(!pt.cs){c.strokeStyle=pt.c;c.setLineDash(xdash(pt.s));c.beginPath();let on2=false;for(let i=0;i<n;i++){const k=VI(i),v=k<0?null:pt.v[k];if(v==null){on2=false;continue}on2?c.lineTo(X(i),Y(v)):c.moveTo(X(i),Y(v));on2=true}c.stroke();c.setLineDash([]);c.lineWidth=1;continue}
       for(let i=1;i<n;i++){const a=VI(i-1),b=VI(i);if(a<0||pt.v[a]==null||pt.v[b]==null)continue;c.strokeStyle=(pt.cs&&pt.cs[b])||pt.c;c.beginPath();c.moveTo(X(i-1),Y(pt.v[a]));c.lineTo(X(i),Y(pt.v[b]));c.stroke()}c.lineWidth=1}
     // nhãn
     for(const lb of o.labels||[]){const x=TX(lb.t);if(x<xL||x>xR)continue;const k=Math.max(0,Math.min(N-1,Math.floor(gi(lb.t)))),bar=all[k],fs=XFS[lb.sz]||10.5;
@@ -647,9 +665,9 @@ function drawX(c,g){XTIPS=[];const {all,st0,X,Y,bw,tfMs}=g,N=all.length;if(!N)re
 // Màu nến do chỉ báo tô (bc), theo chỉ số nến trong all
 function xBarColors(all){const out={};for(const id of xon){const R0=XR[id];if(!R0||!R0.out||!R0.out.bc)continue;let lo=0,hi=all.length-1;while(lo<hi){const m=(lo+hi)>>1;if(all[m].t<R0.t0)lo=m+1;else hi=m}R0.out.bc.forEach((cl,k)=>{if(cl)out[lo+k]=cl})}return out}
 function renderXTables(){const box=$("#xtbls");if(!box)return;let h="";const used={};
-  for(const id of xon){const o=XR[id]&&XR[id].out;if(!o||!o.table||!o.table.rows)continue;const T=o.table,pos=T.pos||"top_right",n=(used[pos]=(used[pos]||0)+1)-1;
+  for(const id of xon){const o=XR[id]&&XR[id].out;if(!o)continue;for(const T of [...(o.tables||[]),...(o.table?[o.table]:[])]){if(!T||!T.rows)continue;const pos=T.pos||"top_right",n=(used[pos]=(used[pos]||0)+1)-1;
     const [v,hz]=pos.split("_"),cols=Math.max(...T.rows.map(r=>r.length)),st=[v==="top"?`top:${30+n*4}px`:`bottom:${(lay?lay.H-lay.priceH:22)+6+n*4}px`,hz==="left"?"left:8px":hz==="right"?"right:78px":"left:50%;transform:translateX(-50%)",`background:${T.bg||"rgb(11 14 20 / .92)"}`].join(";");
-    h+=`<table class="xtbl sz-${T.sz||"small"}" data-pos="${pos}" style="${st}">${T.rows.map(r=>`<tr>${r.map(cl=>`<td style="color:${cl.tc||"var(--fg)"};${cl.bg?"background:"+cl.bg+";":""}${cl.b?"font-weight:700;":""}text-align:${cl.al||"left"};${cl.w?"min-width:"+cl.w+"px;":""}">${esc(cl.t)}</td>`).join("")}</tr>`).join("")}${T.foot?`<tr><td colspan="${cols}" style="color:${T.foot.tc}">${esc(T.foot.t)}</td></tr>`:""}</table>`}
+    h+=`<table class="xtbl sz-${T.sz||"small"}" data-pos="${pos}" style="${st}">${T.rows.map(r=>`<tr>${r.map(cl=>`<td${cl.cs?` colspan="${cl.cs}"`:""} style="color:${cl.tc||"var(--fg)"};${cl.bg?"background:"+cl.bg+";":""}${cl.b?"font-weight:700;":""}text-align:${cl.al||"left"};${cl.w?"min-width:"+cl.w+"px;":""}">${esc(cl.t)}</td>`).join("")}</tr>`).join("")}${T.foot?`<tr><td colspan="${cols}" style="color:${T.foot.tc}">${esc(T.foot.t)}</td></tr>`:""}</table>`}}
   box.innerHTML=h;
   // nhiều bảng cùng vị trí thì xếp chồng, không đè nhau
   const acc={};box.querySelectorAll("table").forEach(t=>{const pos=t.dataset.pos,v=pos.split("_")[0],k=acc[pos]||0;if(k){const cur=parseFloat(v==="top"?t.style.top:t.style.bottom);t.style[v==="top"?"top":"bottom"]=(cur+k)+"px"}acc[pos]=k+t.offsetHeight+4})}
