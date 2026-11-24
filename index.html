@@ -110,12 +110,24 @@ canvas{display:block;width:100%;height:100%}
 .ctabs button{flex:1;background:none;border:0;border-bottom:2px solid transparent;padding:6px 4px;cursor:pointer;color:var(--muted);font-family:var(--cond);text-transform:uppercase;letter-spacing:.06em;font-size:11.5px}
 .ctabs button[aria-selected="true"]{color:var(--amber);border-color:var(--amber)}
 .cbody{flex:1;overflow:auto;min-height:0;min-width:0}
-.rank{flex:0 0 auto;max-height:48%;overflow:auto;border-bottom:1px solid var(--line);background:#0c0c10}
-.rank-h{display:flex;align-items:baseline;gap:8px;padding:7px 10px 5px;font-family:var(--cond);font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:12px;color:var(--amber);position:sticky;top:0;background:#0c0c10;z-index:1}
-.rank-h small{font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11px}
-.rkt{width:100%;border-collapse:collapse;font-size:11.5px;table-layout:fixed}.rkt td:nth-child(3){white-space:normal}.rkt td:last-child .sub{white-space:nowrap}.rkt th{font-weight:400;color:var(--muted);text-align:left;padding:3px 6px;border-bottom:1px solid var(--line);font-size:10.5px}
-.rkt td{padding:4px 6px;border-bottom:1px solid #1a1a20;white-space:nowrap}.rkt .r{text-align:right}.rkt tr{cursor:pointer}.rkt tr:hover td{background:#15151b}
-.rkt tr.cur td{background:#1a1712}.rkt tr.cur td:nth-child(2){font-weight:700}.rkt .nm{max-width:150px;overflow:hidden;text-overflow:ellipsis}.rkt .sub{display:block;color:var(--muted);font-size:10px}
+.rank{flex:1 1 auto;display:flex;flex-direction:column;background:#0c0c10;min-height:0}.rkw{flex:1;overflow:auto;min-height:0}
+.rank-h{display:flex;flex-direction:column;gap:2px;padding:9px 12px 8px;font-family:var(--cond);font-weight:700;letter-spacing:.05em;text-transform:uppercase;font-size:14px;color:var(--amber);position:sticky;top:0;background:var(--panel2);border-top:2px solid var(--amber);border-bottom:1px solid var(--line);z-index:2}
+.rank-h small{font-weight:400;text-transform:none;letter-spacing:.01em;color:var(--muted);font-size:12px}
+.rkt{width:100%;border-collapse:collapse;table-layout:fixed;font-family:var(--cond);font-size:13px}
+.rkt th{position:sticky;top:0;z-index:1;background:#0c0c10;font-family:var(--cond);font-weight:500;color:var(--muted);text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em}
+.rkt td{padding:7px 6px;border-bottom:1px solid #1a1a20;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.25}
+.rkt .r{text-align:right}.rkt tbody tr{cursor:pointer}.rkt tbody tr:hover td{background:#15151b}
+.rkt tr.cur td{background:#1a1712}.rkt tr.cur td:first-child{box-shadow:inset 2px 0 0 var(--amber)}
+.rkt .nm{font-weight:700;letter-spacing:.02em;white-space:normal}.rkt td:first-child{text-overflow:clip;padding-left:10px}.rkt .go{padding:0}.rkt .nm i{display:inline-block;width:7px;height:7px;margin-right:7px;vertical-align:1px}
+.rkt .sub{display:block;color:var(--muted);font-size:10.5px;font-family:var(--mono);margin-top:2px}.rkt td.num{font-family:var(--mono);font-size:12.5px}
+.rkt .go{color:var(--muted);text-align:center}.rkt tbody tr:hover .go{color:var(--amber)}
+.col.ov{border-top:0}.cbody th,.cbody td{padding-left:5px;padding-right:5px}
+.col-h .back{grid-row:1/3;grid-column:3;background:none;border:1px solid var(--line);cursor:pointer;color:var(--fg);font-family:var(--cond);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px}.col-h .back:hover{border-color:var(--amber);color:var(--amber)}
+:root[data-role="view"] .top .brand{color:#fff;text-shadow:none}
+.ptabs{display:inline-flex;border:1px solid var(--line)}.ptabs button{background:none;border:0;border-right:1px solid var(--line);color:var(--muted);font-family:var(--cond);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.06em;padding:5px 12px;cursor:pointer}.ptabs button:last-child{border-right:0}.ptabs button[aria-selected="true"]{background:var(--amber);color:var(--amber-ink)}
+body[data-page="eval"] .picker,body[data-page="eval"] .term,body[data-page="eval"] #gutH,body[data-page="eval"] .notes{display:none}
+body:not([data-page="eval"]) #cmpsec{display:none}
+.cmpsym{display:inline-flex;flex-wrap:wrap;gap:4px}.cmpsym button{background:none;border:1px solid var(--line);color:var(--muted);font-family:var(--cond);font-size:12px;padding:3px 8px;cursor:pointer}.cmpsym button[aria-pressed="true"]{border-color:var(--amber);color:var(--amber)}
 .logic{background:var(--panel2);border-bottom:1px solid var(--line);padding:8px 10px;line-height:1.55;font-family:var(--cond);font-size:13px}
 .logic h4{margin:8px 0 2px;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--amber);font-weight:500}
 .logic h4:first-child{margin-top:0}
@@ -168,10 +180,10 @@ tr:nth-child(even) td{background:#08080a}
 .prmact{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.prmact button{border:1px solid var(--line);background:none;color:var(--fg);font-size:11px;padding:4px 8px;cursor:pointer}.prmact .savep{background:var(--amber);color:var(--amber-ink);border-color:var(--amber);font-weight:700}
 .cmpsec{margin-top:6px;background:var(--panel);border:1px solid var(--line);padding:10px 14px}
 .cmphd{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px;font-size:11.5px}
-.cmphd h2{font-family:var(--cond);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--amber);margin:0;font-weight:700}
+.cmphd h2{font-family:var(--cond);font-size:16px;text-transform:uppercase;letter-spacing:.07em;color:var(--amber);margin:0;font-weight:700}
 .cmphd input,.cmphd select{background:var(--bg);border:1px solid var(--line);padding:2px 5px;font-size:11.5px;width:100px;color:var(--amber);margin-left:4px}
 .cmphd select{width:auto}
-.cmpgrid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:12px 18px}@media(max-width:1200px){.cmpgrid{grid-template-columns:minmax(0,1fr)}}
+.cmpgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:22px}.cmpgrid h3{font-size:13px!important;color:var(--amber)!important;margin-bottom:8px!important}.cmpt{width:100%;font-family:var(--cond);font-size:13px}.cmpt td{padding:7px 8px}.cmpt td.num{font-family:var(--mono);font-size:12.5px}
 .cmpgrid h3{font-family:var(--cond);font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--fg,#ddd);margin:0 0 4px;font-weight:600}
 .cmpt tr.pick{cursor:pointer}.cmpt tr.pick:hover td{background:#141418}.cmpt tr.cur td:first-child{font-weight:700}
 .notes{margin-top:6px;background:var(--panel);border:1px solid var(--line);padding:12px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px 28px;font-family:var(--cond);font-size:13.5px}
@@ -231,6 +243,7 @@ body.resizing{user-select:none}
 
 <header class="top">
   <div class="brand">SIGNALS TRADER568VN</div>
+  <nav class="ptabs" role="tablist" aria-label="Trang"><button role="tab" data-page="term">Terminal</button><button role="tab" data-page="eval">Đánh giá chiến lược</button></nav>
   <span class="modewrap"><span class="sketch" id="mode">Dữ liệu mẫu</span><span class="delay" id="delay" hidden>Giá trễ 1 phút</span></span>
   <div class="search">
     <input id="q" autocomplete="off" placeholder="Tìm mã như TradingView: GC, XAUUSD, CL, ZS..." aria-label="Tìm mã">
@@ -345,7 +358,7 @@ const STUD=[
  {id:"rsi",name:"RSI 14",kind:"pane"},{id:"macd",name:"MACD 12, 26, 9",kind:"pane"},{id:"stoch",name:"Stochastic 14, 3",kind:"pane"},{id:"atr",name:"ATR 14",kind:"pane"}
 ];
 const TF=["1m","3m","5m","15m","30m","1H","2H","4H","D","W","M"];
-let sym=SYM[0],open=["ema"],tf="15m",on=new Set(["vol"]),colors={up:"#ffffff",dn:"#ff3b3b"};
+let detail=false,sym=SYM[0],open=["ema"],tf="15m",on=new Set(["vol"]),colors={up:"#ffffff",dn:"#ff3b3b"};
 const per={};
 let L={chartW:null,colW:{},paneH:null,termH:null};try{const x=JSON.parse(localStorage.getItem("t568-layout")||"null");if(x)L=Object.assign(L,x)}catch(e){}
 const saveL=()=>{try{localStorage.setItem("t568-layout",JSON.stringify(L))}catch(e){}};
@@ -371,7 +384,7 @@ async function loadBars(id){const r=RB[id]||(RB[id]={bars:[],last:0});
   r.done=true;if(r.bars.length)r.last=r.bars[r.bars.length-1].t}
 const SRV={}; let SRVsym=null,SRVat=0;
 async function loadStrategies(force){if(!force&&SRVsym===sym.id&&Date.now()-SRVat<300000)return;const d=await api("/api/strategies?symbol="+encodeURIComponent(sym.id));
-  SRVsym=sym.id;SRVat=Date.now();for(const k in SRV)delete SRV[k];(d.strategies||[]).forEach(x=>{SRV[x.id]=x;if(!IND.some(i=>i.id===x.id)){IND.push({id:x.id,name:x.name,c:"--i"+(IND.length%13+1),wr:.5,logic:{}});assign[x.id]=ALL}});SRV._role=d.role}
+  SRVsym=sym.id;SRVat=Date.now();for(const k in SRV)delete SRV[k];(d.strategies||[]).forEach(x=>{SRV[x.id]=x;if(!IND.some(i=>i.id===x.id)){IND.push({id:x.id,name:x.name,c:"--i"+(IND.length%13+1),wr:.5,logic:{}});assign[x.id]=ALL}});SRV._role=d.role;setRole(d.role)}
 async function loadQuotes(){const d=await api("/api/quotes?symbols=*");for(const k in QT)delete QT[k];Object.assign(QT,d.quotes||{});syncSymbols()}
 // Mã nào có giá gửi về mà chưa có trong danh sách thì tự thêm; mã mới gắn lần đầu tự vào bảng giá.
 function syncSymbols(){let ch=false,seen=[];try{seen=JSON.parse(localStorage.getItem("t568-wl-seen")||"[]")}catch(e){}
@@ -402,9 +415,10 @@ const pnl=(t,s)=>(t.x-t.e)*t.dir*s.lots*s.size*sym.unit;
 
 function renderPicker(){const av=IND.filter(i=>assign[i.id].includes(sym.root));open=open.filter(id=>av.some(i=>i.id===id)).slice(0,1);if(!open.length&&av.length)open=[av[0].id];
   $("#picker").innerHTML=`<span class="lbl">Tín hiệu cho ${sym.id}</span>`+`<button class="resetlay" id="resetLay" style="order:9">Đặt lại bố cục</button>`+(av.length?av.map(i=>`<button class="ichip" data-id="${i.id}" aria-pressed="${open.includes(i.id)}"><i style="background:var(${i.c})"></i>${i.name} </button>`).join(""):`<span class="muted">Chưa có chỉ báo tín hiệu nào cho mã này.</span>`);
-  document.querySelectorAll(".ichip").forEach(b=>b.onclick=()=>{open=[b.dataset.id];renderAll()})}
+  document.querySelectorAll(".ichip").forEach(b=>b.onclick=()=>{open=[b.dataset.id];detail=true;renderAll()})}
 
-function colHTML(ind){if(LIVE&&SRV[ind.id])ind={...ind,name:SRV[ind.id].name};const s=st(ind.id),T=trades(ind),cl=T.closed,f=dp(sym.px),pl=cl.map(t=>pnl(t,s)),tot=pl.reduce((a,b)=>a+b,0),wr=cl.length?pl.filter(v=>v>0).length/cl.length*100:null,fx=v=>v==null?"—":Number(v).toFixed(f);let body="";
+function colHTML(ind){if(!detail){const cw=L.colW[ind.id];return `<section class="col ov" style="--c:var(--amber)${cw?`;flex:0 0 ${cw}px;min-width:${cw}px;max-width:none`:''}" data-id="${ind.id}">${rankHTML()||'<div class="empty">Mã này chưa có chiến lược nào.</div>'}</section>`}
+  if(LIVE&&SRV[ind.id])ind={...ind,name:SRV[ind.id].name};const s=st(ind.id),T=trades(ind),cl=T.closed,f=dp(sym.px),pl=cl.map(t=>pnl(t,s)),tot=pl.reduce((a,b)=>a+b,0),wr=cl.length?pl.filter(v=>v>0).length/cl.length*100:null,fx=v=>v==null?"—":Number(v).toFixed(f);let body="";
   if(s.tab==="sig"){body=T.live.length?T.live.map(t=>{const fl=LIVE?null:(sym.px-t.e)*t.dir*s.lots*s.size*sym.unit;
     return `<div class="sig"><div class="t1"><span class="pill ${t.dir>0?'p-buy':'p-sell'}">${t.dir>0?'Mua':'Bán'}</span><span class="pill ${t.st==='act'?'p-act':'p-pend'}">${t.st==='act'?'Đang mở':'Chờ khớp'}</span><span class="tm num">${t.t}</span></div>
      <div class="lv num"><div><span>Entry</span>${fx(t.e)}</div><div><span>SL</span>${fx(t.sl)}</div><div><span>TP</span>${fx(t.tp)}</div></div>
@@ -416,7 +430,7 @@ function colHTML(ind){if(LIVE&&SRV[ind.id])ind={...ind,name:SRV[ind.id].name};co
   const warm=sv&&sv.warm.have<sv.warm.need?`<div class="warm">Đang khởi động: có ${sv.warm.have}/${sv.warm.need} nến ${sv.warm.tf} phút. Chiến lược bắt đầu ra tín hiệu khi đủ nến.</div>`:"";
   const verSel=sv?`<div class="verbar"><label>Bộ thông số <select data-ver="${ind.id}">${[...sv.vers.map(v=>v.ver),sv.ver].filter((v,i,a)=>a.indexOf(v)===i).reverse().map(v=>`<option value="${v}"${curVer(ind)===v?' selected':''}>${v}${v===sv.ver?' · đang chạy':''}</option>`).join("")}<option value="all"${curVer(ind)==="all"?' selected':''}>Tất cả</option></select></label></div>`:"";
   const cw=L.colW[ind.id];return `<section class="col" style="--c:var(${ind.c})${cw?`;flex:0 0 ${cw}px;min-width:${cw}px;max-width:none`:''}" data-id="${ind.id}">
-   ${rankHTML()}<div class="col-h"><i></i><h3>${ind.name}</h3><small>${sym.id} · ${LIVE?"dữ liệu thật":"dữ liệu mẫu"}</small><button class="x" aria-label="Đóng cột" data-close="${ind.id}">×</button></div>
+   <div class="col-h"><i></i><h3>${ind.name}</h3><small>${sym.id} · ${LIVE?"dữ liệu thật":"dữ liệu mẫu"}</small><button class="back" data-back title="Quay lại bảng xếp hạng">← Xếp hạng</button></div>
    <div class="strip"><div><span class="lbl">Lãi lỗ</span><div class="v num ${tot>=0?'up':'down'}">${cl.length?usd(tot):"—"}</div></div><div><span class="lbl">Win rate</span><div class="v num">${wr==null?"—":wr.toFixed(0)+"%"}</div></div><div><span class="lbl">Số lệnh</span><div class="v num">${cl.length}</div></div></div>
    <div class="sizer"><label>Lot <input type="number" min="0.01" step="0.01" value="${s.lots}" data-k="lots" id="lots-${ind.id}"></label><label>Quy mô/lot <input type="number" min="1" value="${s.size}" data-k="size" id="size-${ind.id}"></label><span>${sym.unit<1?"giá theo cent":"USD/điểm"}</span></div>
    ${verSel}${warm}<button class="logicbtn" data-logic="${ind.id}" aria-expanded="${!!s.logic}"><span>⚙ Cài đặt thông số</span><span>${s.logic?"▴":"▾"}</span></button>${!s.logic?"":LIVE&&SRV._role==="admin"?logic:`<div class="noaccess">🔒 Bạn không có quyền truy cập. Chỉ quản trị mới xem và chỉnh được thông số của chiến lược.</div>`}
@@ -445,11 +459,14 @@ function overviewHTML(cur,S){const A=CMP.acct,ck=(ok,txt)=>`<span class="${ok?'u
   return `<div style="overflow-x:auto"><table class="cmpt"><thead><tr><th>Chiến lược</th><th>Kết quả</th><th>Mục tiêu +${CMP.phase}%</th><th>Lỗ ngày &lt; 5%</th><th>Lỗ tổng &lt; 10%</th><th>Tối thiểu 4 ngày</th><th class="r">Lãi lỗ</th><th class="r">Win rate</th><th class="r">Số lệnh</th></tr></thead><tbody>${S.map(({i,r})=>`<tr class="pick${i.id===cur?' cur':''}" data-pick="${i.id}"><td style="color:var(${i.c})">${i.name}${i.id===cur?' ●':''}</td>${!r?'<td colspan="8" class="muted">Chưa có lệnh đã đóng</td>':`<td><span class="pill ${r.verdict==='no'?'p-no':r.verdict==='ok'?'p-ok':'p-wait'}">${r.verdict==='no'?'Vi phạm':r.verdict==='ok'?'Đạt':'Đang chạy'}</span></td><td>${ck(r.okT,Math.max(0,r.tgtPct).toFixed(0)+'%')}</td><td>${ck(r.okD,usd(r.worst))}</td><td>${ck(r.okM,usd(r.maxLoss))}</td><td>${ck(r.okN,r.nd+' ngày')}</td><td class="r num ${r.prof>=0?'up':'down'}">${usd(r.prof)}</td><td class="r num">${r.wr.toFixed(1)}%</td><td class="r num">${r.n}</td>`}</tr>`).join("")}</tbody></table></div>`}
 function renderCmp(){const el=$("#cmpsec");if(!el)return;const av=IND.filter(i=>assign[i.id].includes(sym.root)),cur=open[0];
   const S=av.map(i=>{const s=Object.assign({},st(i.id),CMP);return{i,r:statsOf(i,s)}}),s0=Object.assign({},st(cur||""),CMP);
-  el.innerHTML=`<div class="cmphd"><h2>Các chiến lược · ${sym.id}</h2><label>Vốn $<input id="cmpAcct" type="number" min="1000" step="1000" value="${CMP.acct}"></label><label>Mục tiêu <select id="cmpPhase"><option value="10"${CMP.phase==10?' selected':''}>10%</option><option value="5"${CMP.phase==5?' selected':''}>5%</option></select></label><span class="muted">Lot và quy mô lấy theo cài đặt của từng chiến lược. Bấm vào một chiến lược để xem bên trên.</span></div>
+  el.innerHTML=`<div class="cmphd"><h2>Các chiến lược · ${sym.id}</h2><label>Vốn $<input id="cmpAcct" type="number" min="1000" step="1000" value="${CMP.acct}"></label><label>Mục tiêu <select id="cmpPhase"><option value="10"${CMP.phase==10?' selected':''}>10%</option><option value="5"${CMP.phase==5?' selected':''}>5%</option></select></label><span class="cmpsym" role="group" aria-label="Chọn mã">${WL.map(id=>`<button data-csym="${id}" aria-pressed="${id===sym.id}">${id.split(":")[1]}</button>`).join("")}</span><span class="muted">Mã dùng chung với Terminal. Lot và quy mô lấy theo cài đặt của từng chiến lược. Bấm vào một chiến lược để mở chi tiết trên Terminal.</span></div>
    ${av.length?`<div class="cmpgrid"><div><h3>Bảng đánh giá tổng quan</h3>${overviewHTML(cur,S)}</div><div><h3>So sánh chỉ tiêu <span class="muted">· ô vàng là tốt nhất</span></h3>${cmpHTML(cur,S,s0)}</div></div>`:'<div class="empty">Mã này chưa có chiến lược nào.</div>'}`;
   $("#cmpAcct")&&($("#cmpAcct").onchange=e=>{const v=parseFloat(e.target.value);if(v>0){CMP.acct=v;renderCmp()}});
   $("#cmpPhase")&&($("#cmpPhase").onchange=e=>{CMP.phase=+e.target.value;renderCmp()});
-  el.querySelectorAll("[data-pick]").forEach(tr=>tr.onclick=()=>{open=[tr.dataset.pick];renderAll();window.scrollTo({top:0,behavior:"smooth"})})}
+  el.querySelectorAll("[data-pick]").forEach(tr=>tr.onclick=()=>{open=[tr.dataset.pick];detail=true;setPage("term");renderAll();window.scrollTo({top:0,behavior:"smooth"})});
+  el.querySelectorAll("[data-csym]").forEach(b=>b.onclick=()=>{sym=SYM.find(x=>x.id===b.dataset.csym)||sym;open=open.slice(0,1);renderAll()})}
+function setRole(r){if(!r)return;document.documentElement.dataset.role=r;store.set("t568-role",r)}
+function setPage(p){p=p==="eval"?"eval":"term";document.body.dataset.page=p;store.set("t568-page",p);document.querySelectorAll(".ptabs [data-page]").forEach(b=>b.setAttribute("aria-selected",b.dataset.page===p));if(p==="term")requestAnimationFrame(drawChart)}
 function evalHTML(ind,s,cl,pl){const A=s.acct,days={};cl.forEach((t,i)=>days[t.d]=(days[t.d]||0)+pl[i]);
   let eq=A,lo=A,curve=[A];cl.forEach((t,i)=>{eq+=pl[i];curve.push(eq);lo=Math.min(lo,eq)});
   const prof=eq-A,worstDay=Math.min(0,...Object.values(days)),nDays=Object.keys(days).length,maxLoss=lo-A,tgt=A*s.phase/100,dl=A*.05,ml=A*.1;
@@ -484,15 +501,15 @@ function rankHTML(){const av=IND.filter(i=>assign[i.id]&&assign[i.id].includes(s
   const rows=av.map(i=>{const nm=LIVE&&SRV[i.id]?SRV[i.id].name:i.name,s=st(i.id),T=trades(i),pl=T.closed.map(t=>pnl(t,s)),cl=pl.reduce((a,b)=>a+b,0),act=T.live.filter(t=>t.st==="act"),fl=act.reduce((a,t)=>a+(lp-t.e)*t.dir*s.lots*s.size*sym.unit,0),pend=T.live.length-act.length,n=pl.length;
     return{i,nm,tot:cl+fl,fl,act,pend,n,wr:n?pl.filter(v=>v>0).length/n*100:null}}).sort((a,b)=>b.tot-a.tot||b.act.length-a.act.length||b.n-a.n);
   const nAct=rows.filter(r=>r.act.length).length;
-  return `<div class="rank"><div class="rank-h">Xếp hạng chiến lược · ${sym.root}<small>${rows.length} chiến lược · ${nAct} đang có lệnh · sắp theo lãi lỗ giảm dần</small></div>
-   <table class="rkt"><thead><tr><th style="width:24px">#</th><th>Chiến lược</th><th style="width:118px">Trạng thái</th><th class="r" style="width:100px">Lãi lỗ · WR</th></tr></thead><tbody>${rows.map((r,k)=>{const a=r.act[0];
+  return `<div class="rank"><div class="rank-h">Xếp hạng chiến lược · ${sym.root}<small>${rows.length} chiến lược · ${nAct} đang có lệnh · bấm để xem chi tiết</small></div>
+   <div class="rkw"><table class="rkt"><thead><tr><th style="width:30px">#</th><th>Chiến lược</th><th style="width:24%">Trạng thái</th><th class="r" style="width:32%">Lãi lỗ · WR</th><th style="width:16px"></th></tr></thead><tbody>${rows.map((r,k)=>{const a=r.act[0];
     const stt=a?`<span class="pill ${a.dir>0?'p-buy':'p-sell'}">${a.dir>0?'Đang Mua':'Đang Bán'}</span><span class="sub num">từ ${Number(a.e).toFixed(f)} · ${usd(r.fl)}</span>`:r.pend?`<span class="pill p-pend">Chờ khớp</span>`:`<span class="muted">Chờ tín hiệu</span>`;
-    return `<tr class="${open.includes(r.i.id)?'cur':''}" data-rk="${r.i.id}"><td class="num muted">${k+1}</td><td class="nm" style="color:var(${r.i.c})" title="${esc(r.nm)}">${esc(r.nm)}</td><td>${stt}</td><td class="r num ${r.tot>0?'up':r.tot<0?'down':'muted'}">${r.n||r.act.length?usd(r.tot):"—"}<span class="sub">${r.n?r.n+" lệnh · "+r.wr.toFixed(0)+"%":"0 lệnh"}</span></td></tr>`}).join("")}</tbody></table></div>`}
+    return `<tr class="${open.includes(r.i.id)?'cur':''}" data-rk="${r.i.id}"><td class="num muted">${k+1}</td><td class="nm" title="${esc(r.nm)}"><i style="background:var(${r.i.c})"></i>${esc(r.nm)}</td><td>${stt}</td><td class="r num ${r.tot>0?'up':r.tot<0?'down':'muted'}">${r.n||r.act.length?usd(r.tot):"—"}<span class="sub">${r.n?r.n+" lệnh · WR "+r.wr.toFixed(0)+"%":"0 lệnh"}</span></td><td class="go">›</td></tr>`}).join("")}</tbody></table></div></div>`}
 
 function renderCols(){const av=IND.filter(i=>assign[i.id].includes(sym.root));
   $("#cols").innerHTML=open.map(id=>colHTML(IND.find(i=>i.id===id))+`<div class="gut" data-cg="${id}" title="Kéo để chỉnh độ rộng cột"></div>`).join("");
-  document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>{open=open.filter(x=>x!==b.dataset.close);renderAll()});
-  document.querySelectorAll("[data-rk]").forEach(r=>r.onclick=()=>{open=[r.dataset.rk];renderAll()});
+  document.querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>{detail=false;renderCols()});
+  document.querySelectorAll("[data-rk]").forEach(r=>r.onclick=()=>{open=[r.dataset.rk];detail=true;st(r.dataset.rk).tab=st(r.dataset.rk).tab==="sig"?"hist":st(r.dataset.rk).tab;renderAll()});
   document.querySelectorAll("[data-logic]").forEach(b=>b.onclick=()=>{const s=st(b.dataset.logic);s.logic=!s.logic;renderCols()});
   document.querySelectorAll("[data-ver]").forEach(sel=>sel.onchange=()=>{st(sel.dataset.ver).ver=sel.value;renderCols();renderCmp();drawChart()});
   document.querySelectorAll("[data-def]").forEach(b=>b.onclick=()=>{const col=b.closest(".col"),sv=SRV[b.dataset.def];col.querySelectorAll("[data-pk]").forEach(i=>{const d=sv.params.find(x=>x.k===i.dataset.pk);if(d)i.value=d.def})});
@@ -775,7 +792,8 @@ function showLogin(msg){$("#login").hidden=false;$("#loginMsg").textContent=msg|
 $("#loginForm").addEventListener("submit",async e=>{e.preventDefault();$("#loginMsg").textContent="";
   try{const r=await fetch(API+"/api/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password:$("#pw").value})});const d=await r.json().catch(()=>({}));
     if(!r.ok){$("#loginMsg").textContent=d.error||"Sai mật khẩu.";return}
-    store.set("t568-token",d.token);$("#pw").value="";$("#login").hidden=true;startPoll()}
+    store.set("t568-token",d.token);setRole(d.role);$("#pw").value="";$("#login").hidden=true;startPoll()}
   catch(err){$("#loginMsg").textContent="Không kết nối được máy chủ. Kiểm tra lại địa chỉ trong config.js."}});
+document.querySelectorAll(".ptabs [data-page]").forEach(b=>b.onclick=()=>setPage(b.dataset.page));setPage(store.get("t568-page"));setRole(store.get("t568-role"));
 if(API){store.get("t568-token")?startPoll():showLogin()}else setMode("Dữ liệu mẫu");document.fonts&&document.fonts.ready.then(drawChart);
 </script>
