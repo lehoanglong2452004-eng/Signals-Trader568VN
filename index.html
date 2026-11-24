@@ -308,7 +308,7 @@ const STUD=[
  {id:"rsi",name:"RSI 14",kind:"pane"},{id:"macd",name:"MACD 12, 26, 9",kind:"pane"},{id:"stoch",name:"Stochastic 14, 3",kind:"pane"},{id:"atr",name:"ATR 14",kind:"pane"}
 ];
 const TF=["1m","3m","5m","15m","30m","1H","2H","4H","D","W","M"];
-let sym=SYM[0],open=["ema"],tf="1H",on=new Set(["vol"]),colors={up:"#ffffff",dn:"#ff3b3b"};
+let sym=SYM[0],open=["ema"],tf="15m",on=new Set(["vol"]),colors={up:"#ffffff",dn:"#ff3b3b"};
 const per={};
 let L={chartW:null,colW:{},paneH:null,termH:null};try{const x=JSON.parse(localStorage.getItem("t568-layout")||"null");if(x)L=Object.assign(L,x)}catch(e){}
 const saveL=()=>{try{localStorage.setItem("t568-layout",JSON.stringify(L))}catch(e){}};
