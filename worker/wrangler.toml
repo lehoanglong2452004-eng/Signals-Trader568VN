@@ -9,7 +9,7 @@ ALLOWED_ORIGINS = "https://lehoanglong2452004-eng.github.io,null"
 [[d1_databases]]
 binding = "DB"
 database_name = "signals-trader568vn"
-database_id = "DIEN_ID_SAU_KHI_TAO"
+database_id = "fcc1eac3-f54f-4f52-84ee-63b5db7ebbc2"
 
 # Bí mật (không ghi vào file này), đặt bằng lệnh:
 #   npx wrangler secret put WEBHOOK_KEY     -> khóa dán vào URL webhook của TradingView

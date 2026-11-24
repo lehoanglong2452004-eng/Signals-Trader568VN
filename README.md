@@ -15,7 +15,7 @@ Terminal theo dõi tín hiệu giao dịch phái sinh hàng hóa (vàng, bạc, 
 - **Bên trái:** chart giá (hiện là minh họa với giá mẫu; nguồn giá thật chọn sau) + volume (panel riêng, màu xanh dương cố định). Nến mặc định tăng trắng / giảm đỏ, người dùng tự đổi màu.
   Thanh chart chỉ có khung thời gian (1m → M) và menu 10 chỉ báo phổ biến: Volume, EMA 20/50, SMA 200, Bollinger Bands, VWAP, Ichimoku, RSI, MACD, Stochastic, ATR.
 - **Bên phải:** 3 chiến lược giới thiệu (EMA Cross 9/21, Breakout Donchian 20, RSI Divergence), mỗi chiến lược một cột, mở bao nhiêu cột tùy ý. Mỗi cột chỉ hiện số của riêng chỉ báo đó:
-  tín hiệu đang mở / chờ khớp, logic và điều kiện vào lệnh, lịch sử lệnh, lãi lỗ và đánh giá theo bộ quy tắc kiểu FTMO
+  tín hiệu đang mở / chờ khớp, logic và điều kiện vào lệnh, lịch sử lệnh, lãi lỗ và đánh giá theo bộ quy tắc quỹ cấp vốn, kèm tab So sánh giữa các chiến lược
   (mục tiêu lợi nhuận 10% / 5%, lỗ tối đa ngày 5%, lỗ tối đa tổng 10%, tối thiểu 4 ngày giao dịch).
 - Mã theo ký hiệu TradingView (GC1!, GCZ2026, OANDA:XAUUSD...), chọn được từng kỳ hạn hợp đồng.
 - Đồng hồ chạy realtime theo GMT+7.
