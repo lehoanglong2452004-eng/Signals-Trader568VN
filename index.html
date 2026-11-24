@@ -7,7 +7,7 @@
   color-scheme:dark;
   --bg:#000000; --panel:#0b0b0c; --panel2:#151517; --line:#2a2a2e; --grid:#1a1a1d; --fg:#e8e6e1; --muted:#8b8a86;
   --amber:#ffa630; --amber-ink:#000000; --buy:#3ddc84; --sell:#ff4d4d; --warn:#ffc94d; --vol:#2f7bff;
-  --i1:#4fa3ff; --i2:#c58bff; --i3:#ff8a3d; --i4:#3fd6c9;
+  --i1:#4fa3ff; --i2:#c58bff; --i3:#ff8a3d; --i4:#3fd6c9; --i5:#f5d142; --i6:#ff5c8a; --i7:#7dd87d; --i8:#6fa8ff; --i9:#e08cff; --i10:#ffb36b; --i11:#4fe0b0; --i12:#ff7f6b; --i13:#b7c4ff;
   --s1:#ffa630; --s2:#4fd1ff; --s3:#ff6fd8; --s4:#b6f36a; --s5:#c9c9c9;
   --mono:"Roboto Mono",ui-monospace,Menlo,Consolas,monospace; --cond:"Roboto Condensed","Arial Narrow",system-ui,sans-serif;
 }
@@ -62,6 +62,8 @@ select.contract{background:var(--panel2);color:var(--fg);border:1px solid var(--
 .wladd input{background:var(--bg);border:1px solid var(--line);padding:5px 8px;color:var(--amber);font-size:12px;text-transform:uppercase}.wladd input::placeholder{text-transform:none;color:var(--muted)}
 #wlres{overflow-y:auto}#wlres button{display:flex;justify-content:space-between;gap:8px;width:100%;background:none;border:0;border-bottom:1px solid var(--grid);padding:5px 4px;color:var(--fg);cursor:pointer;font-size:11.5px;text-align:left}#wlres button:hover{background:#16161b}#wlres b{white-space:nowrap}#wlres em{font-style:normal;color:var(--muted);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chartbox{flex:1 1 auto;min-width:420px;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line)}
+.chartbox.full{position:fixed!important;inset:0!important;z-index:900;width:auto!important;height:auto!important;min-width:0!important;max-width:none!important;flex:none!important;margin:0}
+.chartbox.full .chartwrap{flex:1 1 auto}
 .tvbar{display:flex;align-items:center;gap:2px;padding:3px 6px;border-bottom:1px solid var(--line);flex-wrap:wrap;position:relative}
 .tvbar .sym{color:var(--amber);font-weight:500;padding:3px 8px 3px 2px;border-right:1px solid var(--line);margin-right:4px}
 .tvbar button{background:none;border:0;padding:3px 6px;cursor:pointer;color:var(--muted);font-size:11.5px}
@@ -108,6 +110,12 @@ canvas{display:block;width:100%;height:100%}
 .ctabs button{flex:1;background:none;border:0;border-bottom:2px solid transparent;padding:6px 4px;cursor:pointer;color:var(--muted);font-family:var(--cond);text-transform:uppercase;letter-spacing:.06em;font-size:11.5px}
 .ctabs button[aria-selected="true"]{color:var(--amber);border-color:var(--amber)}
 .cbody{flex:1;overflow:auto;min-height:0;min-width:0}
+.rank{flex:0 0 auto;max-height:48%;overflow:auto;border-bottom:1px solid var(--line);background:#0c0c10}
+.rank-h{display:flex;align-items:baseline;gap:8px;padding:7px 10px 5px;font-family:var(--cond);font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:12px;color:var(--amber);position:sticky;top:0;background:#0c0c10;z-index:1}
+.rank-h small{font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11px}
+.rkt{width:100%;border-collapse:collapse;font-size:11.5px;table-layout:fixed}.rkt td:nth-child(3){white-space:normal}.rkt td:last-child .sub{white-space:nowrap}.rkt th{font-weight:400;color:var(--muted);text-align:left;padding:3px 6px;border-bottom:1px solid var(--line);font-size:10.5px}
+.rkt td{padding:4px 6px;border-bottom:1px solid #1a1a20;white-space:nowrap}.rkt .r{text-align:right}.rkt tr{cursor:pointer}.rkt tr:hover td{background:#15151b}
+.rkt tr.cur td{background:#1a1712}.rkt tr.cur td:nth-child(2){font-weight:700}.rkt .nm{max-width:150px;overflow:hidden;text-overflow:ellipsis}.rkt .sub{display:block;color:var(--muted);font-size:10px}
 .logic{background:var(--panel2);border-bottom:1px solid var(--line);padding:8px 10px;line-height:1.55;font-family:var(--cond);font-size:13px}
 .logic h4{margin:8px 0 2px;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--amber);font-weight:500}
 .logic h4:first-child{margin-top:0}
@@ -256,6 +264,7 @@ body.resizing{user-select:none}
       <button class="menu-btn" id="setBtn" aria-expanded="false">Màu nến ▾</button>
       <button class="icobtn on" id="asBtn" aria-pressed="true" title="Tự cuộn tới nến mới nhất"><svg width="22" height="14" viewBox="0 0 22 14" aria-hidden="true"><g stroke="#22c55e" stroke-width="1.4" fill="none"><path d="M2 2v10M5 4v6M3.5 3v8"/><path d="M8 7h11M15 3.5L19 7l-4 3.5"/></g></svg></button>
       <button class="icobtn on" id="csBtn" aria-pressed="true" title="Chừa khoảng trống bên phải chart"><svg width="22" height="14" viewBox="0 0 22 14" aria-hidden="true"><g stroke="#3b82f6" stroke-width="1.4" fill="none"><path d="M17 2v10M20 4v6M18.5 3v8"/><path d="M14 7H3M7 3.5L3 7l4 3.5"/></g></svg></button>
+      <button class="icobtn on" id="fsBtn" aria-pressed="false" title="Phóng to biểu đồ toàn màn hình (Esc để thoát)"><svg width="16" height="14" viewBox="0 0 16 14" aria-hidden="true"><g stroke="#f5b301" stroke-width="1.5" fill="none"><path d="M1 5V1h4M11 1h4v4M15 9v4h-4M5 13H1V9"/></g></svg></button>
       <span class="ohlc num" id="ohlc"></span>
       <div class="menu" id="indMenu" hidden></div>
       <div class="menu" id="setMenu" hidden>
@@ -362,7 +371,7 @@ async function loadBars(id){const r=RB[id]||(RB[id]={bars:[],last:0});
   r.done=true;if(r.bars.length)r.last=r.bars[r.bars.length-1].t}
 const SRV={}; let SRVsym=null,SRVat=0;
 async function loadStrategies(force){if(!force&&SRVsym===sym.id&&Date.now()-SRVat<300000)return;const d=await api("/api/strategies?symbol="+encodeURIComponent(sym.id));
-  SRVsym=sym.id;SRVat=Date.now();for(const k in SRV)delete SRV[k];(d.strategies||[]).forEach(x=>SRV[x.id]=x);SRV._role=d.role}
+  SRVsym=sym.id;SRVat=Date.now();for(const k in SRV)delete SRV[k];(d.strategies||[]).forEach(x=>{SRV[x.id]=x;if(!IND.some(i=>i.id===x.id)){IND.push({id:x.id,name:x.name,c:"--i"+(IND.length%13+1),wr:.5,logic:{}});assign[x.id]=ALL}});SRV._role=d.role}
 async function loadQuotes(){const d=await api("/api/quotes?symbols=*");for(const k in QT)delete QT[k];Object.assign(QT,d.quotes||{});syncSymbols()}
 // Mã nào có giá gửi về mà chưa có trong danh sách thì tự thêm; mã mới gắn lần đầu tự vào bảng giá.
 function syncSymbols(){let ch=false,seen=[];try{seen=JSON.parse(localStorage.getItem("t568-wl-seen")||"[]")}catch(e){}
@@ -407,7 +416,7 @@ function colHTML(ind){if(LIVE&&SRV[ind.id])ind={...ind,name:SRV[ind.id].name};co
   const warm=sv&&sv.warm.have<sv.warm.need?`<div class="warm">Đang khởi động: có ${sv.warm.have}/${sv.warm.need} nến ${sv.warm.tf} phút. Chiến lược bắt đầu ra tín hiệu khi đủ nến.</div>`:"";
   const verSel=sv?`<div class="verbar"><label>Bộ thông số <select data-ver="${ind.id}">${[...sv.vers.map(v=>v.ver),sv.ver].filter((v,i,a)=>a.indexOf(v)===i).reverse().map(v=>`<option value="${v}"${curVer(ind)===v?' selected':''}>${v}${v===sv.ver?' · đang chạy':''}</option>`).join("")}<option value="all"${curVer(ind)==="all"?' selected':''}>Tất cả</option></select></label></div>`:"";
   const cw=L.colW[ind.id];return `<section class="col" style="--c:var(${ind.c})${cw?`;flex:0 0 ${cw}px;min-width:${cw}px;max-width:none`:''}" data-id="${ind.id}">
-   <div class="col-h"><i></i><h3>${ind.name}</h3><small>${sym.id} · ${LIVE?"dữ liệu thật":"dữ liệu mẫu"}</small><button class="x" aria-label="Đóng cột" data-close="${ind.id}">×</button></div>
+   ${rankHTML()}<div class="col-h"><i></i><h3>${ind.name}</h3><small>${sym.id} · ${LIVE?"dữ liệu thật":"dữ liệu mẫu"}</small><button class="x" aria-label="Đóng cột" data-close="${ind.id}">×</button></div>
    <div class="strip"><div><span class="lbl">Lãi lỗ</span><div class="v num ${tot>=0?'up':'down'}">${cl.length?usd(tot):"—"}</div></div><div><span class="lbl">Win rate</span><div class="v num">${wr==null?"—":wr.toFixed(0)+"%"}</div></div><div><span class="lbl">Số lệnh</span><div class="v num">${cl.length}</div></div></div>
    <div class="sizer"><label>Lot <input type="number" min="0.01" step="0.01" value="${s.lots}" data-k="lots" id="lots-${ind.id}"></label><label>Quy mô/lot <input type="number" min="1" value="${s.size}" data-k="size" id="size-${ind.id}"></label><span>${sym.unit<1?"giá theo cent":"USD/điểm"}</span></div>
    ${verSel}${warm}<button class="logicbtn" data-logic="${ind.id}" aria-expanded="${!!s.logic}"><span>⚙ Cài đặt thông số</span><span>${s.logic?"▴":"▾"}</span></button>${!s.logic?"":LIVE&&SRV._role==="admin"?logic:`<div class="noaccess">🔒 Bạn không có quyền truy cập. Chỉ quản trị mới xem và chỉnh được thông số của chiến lược.</div>`}
@@ -469,9 +478,21 @@ function evalHTML(ind,s,cl,pl){const A=s.acct,days={};cl.forEach((t,i)=>days[t.d
     <div><span class="lbl">Lợi nhuận % vốn</span><div class="v ${prof>=0?'up':'down'}">${(prof/A*100).toFixed(2)}%</div></div>
    </div></div>`}
 
+// Bảng xếp hạng mọi chiến lược tín hiệu của mã đang xem: lãi lỗ = lệnh đã đóng + lệnh đang mở (tạm tính theo giá cuối)
+function rankHTML(){const av=IND.filter(i=>assign[i.id]&&assign[i.id].includes(sym.root));if(!av.length)return"";
+  const RB0=RB[sym.id],lp=(QT[sym.id]&&QT[sym.id].c)||(RB0&&RB0.bars.length?RB0.bars[RB0.bars.length-1].c:sym.px),f=dp(sym.px);
+  const rows=av.map(i=>{const nm=LIVE&&SRV[i.id]?SRV[i.id].name:i.name,s=st(i.id),T=trades(i),pl=T.closed.map(t=>pnl(t,s)),cl=pl.reduce((a,b)=>a+b,0),act=T.live.filter(t=>t.st==="act"),fl=act.reduce((a,t)=>a+(lp-t.e)*t.dir*s.lots*s.size*sym.unit,0),pend=T.live.length-act.length,n=pl.length;
+    return{i,nm,tot:cl+fl,fl,act,pend,n,wr:n?pl.filter(v=>v>0).length/n*100:null}}).sort((a,b)=>b.tot-a.tot||b.act.length-a.act.length||b.n-a.n);
+  const nAct=rows.filter(r=>r.act.length).length;
+  return `<div class="rank"><div class="rank-h">Xếp hạng chiến lược · ${sym.root}<small>${rows.length} chiến lược · ${nAct} đang có lệnh · sắp theo lãi lỗ giảm dần</small></div>
+   <table class="rkt"><thead><tr><th style="width:24px">#</th><th>Chiến lược</th><th style="width:118px">Trạng thái</th><th class="r" style="width:100px">Lãi lỗ · WR</th></tr></thead><tbody>${rows.map((r,k)=>{const a=r.act[0];
+    const stt=a?`<span class="pill ${a.dir>0?'p-buy':'p-sell'}">${a.dir>0?'Đang Mua':'Đang Bán'}</span><span class="sub num">từ ${Number(a.e).toFixed(f)} · ${usd(r.fl)}</span>`:r.pend?`<span class="pill p-pend">Chờ khớp</span>`:`<span class="muted">Chờ tín hiệu</span>`;
+    return `<tr class="${open.includes(r.i.id)?'cur':''}" data-rk="${r.i.id}"><td class="num muted">${k+1}</td><td class="nm" style="color:var(${r.i.c})" title="${esc(r.nm)}">${esc(r.nm)}</td><td>${stt}</td><td class="r num ${r.tot>0?'up':r.tot<0?'down':'muted'}">${r.n||r.act.length?usd(r.tot):"—"}<span class="sub">${r.n?r.n+" lệnh · "+r.wr.toFixed(0)+"%":"0 lệnh"}</span></td></tr>`}).join("")}</tbody></table></div>`}
+
 function renderCols(){const av=IND.filter(i=>assign[i.id].includes(sym.root));
   $("#cols").innerHTML=open.map(id=>colHTML(IND.find(i=>i.id===id))+`<div class="gut" data-cg="${id}" title="Kéo để chỉnh độ rộng cột"></div>`).join("");
   document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>{open=open.filter(x=>x!==b.dataset.close);renderAll()});
+  document.querySelectorAll("[data-rk]").forEach(r=>r.onclick=()=>{open=[r.dataset.rk];renderAll()});
   document.querySelectorAll("[data-logic]").forEach(b=>b.onclick=()=>{const s=st(b.dataset.logic);s.logic=!s.logic;renderCols()});
   document.querySelectorAll("[data-ver]").forEach(sel=>sel.onchange=()=>{st(sel.dataset.ver).ver=sel.value;renderCols();renderCmp();drawChart()});
   document.querySelectorAll("[data-def]").forEach(b=>b.onclick=()=>{const col=b.closest(".col"),sv=SRV[b.dataset.def];col.querySelectorAll("[data-pk]").forEach(i=>{const d=sv.params.find(x=>x.k===i.dataset.pk);if(d)i.value=d.def})});
@@ -582,6 +603,8 @@ const toEnd=()=>{V.off=-V.shift;drawChart()};
 let CT="candle";try{if(localStorage.getItem("t568-ct")==="line")CT="line"}catch(e){}
 function setCT(v){CT=v;$("#ctC").classList.toggle("on",v==="candle");$("#ctL").classList.toggle("on",v==="line");$("#ctC").setAttribute("aria-pressed",v==="candle");$("#ctL").setAttribute("aria-pressed",v==="line");try{localStorage.setItem("t568-ct",v)}catch(e){}}
 setCT(CT);$("#ctC").onclick=()=>{setCT("candle");drawChart()};$("#ctL").onclick=()=>{setCT("line");drawChart()};
+$("#fsBtn").onclick=()=>{const cb=document.querySelector(".chartbox"),on=!cb.classList.contains("full"),b=$("#fsBtn");cb.classList.toggle("full",on);document.body.style.overflow=on?"hidden":"";b.setAttribute("aria-pressed",on);b.title=on?"Thu nhỏ biểu đồ (Esc)":"Phóng to biểu đồ toàn màn hình (Esc để thoát)";requestAnimationFrame(drawChart)};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.querySelector(".chartbox.full")&&!document.querySelector(".xset:not([hidden])"))$("#fsBtn").click()});
 $("#asBtn").onclick=e=>{V.as=!V.as;e.currentTarget.classList.toggle("on",V.as);e.currentTarget.setAttribute("aria-pressed",V.as);if(V.as)toEnd()};
 $("#csBtn").onclick=e=>{const atEnd=Math.round(V.off)<=0;V.cs=!V.cs;e.currentTarget.classList.toggle("on",V.cs);e.currentTarget.setAttribute("aria-pressed",V.cs);drawChart();if(atEnd||V.as)toEnd()};
 const cvs=$("#chart");let pd=null,pan=null;
@@ -697,7 +720,7 @@ cvs.addEventListener("mousemove",e=>{const tip=$("#xtip");if(!XTIPS.length){tip.
 cvs.addEventListener("mouseleave",()=>{$("#xtip").hidden=true});
 function renderIndMenu(){const g=k=>STUD.filter(s=>s.kind===k).map(s=>`<label for="st-${s.id}"><input type="checkbox" id="st-${s.id}" data-s="${s.id}" ${on.has(s.id)?'checked':''}><span class="sw" style="background:var(${sw[s.id]})"></span>${s.name}${s.fixed?'<small>màu cố định</small>':''}</label>`).join("");
   const xs=!LIVE?`<div class="hint">Đăng nhập để dùng các chỉ báo độc quyền.</div>`:!XI.length?`<div class="hint">Đang tải danh sách...</div>`:XI.map(I=>`<div class="xrow"><label for="xi-${I.id}"><input type="checkbox" id="xi-${I.id}" data-x="${I.id}" ${xon.has(I.id)?'checked':''}>${esc(I.name)}</label><button class="xg" data-xg="${I.id}" title="Cài đặt ${esc(I.short)}" aria-label="Cài đặt ${esc(I.short)}">⚙</button></div>`).join("");
-  $("#indMenu").innerHTML=`<h4 class="xh4">Chỉ báo độc quyền <em>DEV LaiLong</em></h4>${xs}<h4>Trên biểu đồ giá</h4>${g("over")}<h4>Panel riêng</h4>${g("pane")}`;
+  $("#indMenu").innerHTML=`<h4>Trên biểu đồ giá</h4>${g("over")}<h4>Panel riêng</h4>${g("pane")}<h4 class="xh4">Chỉ báo độc quyền <em>DEV LaiLong</em></h4>${xs}`;
   $("#indMenu").querySelectorAll("[data-s]").forEach(x=>x.onchange=()=>{x.checked?on.add(x.dataset.s):on.delete(x.dataset.s);drawChart()});
   $("#indMenu").querySelectorAll("[data-x]").forEach(x=>x.onchange=()=>{x.checked?xon.add(x.dataset.x):xon.delete(x.dataset.x);saveX();drawChart()});
   $("#indMenu").querySelectorAll("[data-xg]").forEach(b=>b.onclick=()=>{closeMenus();openXSet(b.dataset.xg)})}
@@ -735,7 +758,7 @@ function showRes(){const t=q.value.trim().toUpperCase(),m=SYM.filter(s=>!t||s.id
 q.onfocus=showRes;q.oninput=showRes;
 document.addEventListener("click",e=>{if(!e.target.closest(".search"))res.hidden=true;closeMenus()});
 
-function renderAll(){if(LIVE&&SRVsym!==sym.id)loadStrategies().then(()=>{renderCols();renderCmp()}).catch(()=>{});if(LIVE&&!RB[sym.id])loadBars(sym.id).then(()=>{loadQuotes().catch(()=>{}).then(renderWL);drawChart()}).catch(()=>{});$("#tvSym").textContent=sym.id;renderContract();renderWL();renderPicker();renderCols();renderCmp();drawChart();const rl=$("#resetLay");if(rl)rl.onclick=()=>{L={chartW:null,colW:{},paneH:null,termH:null};saveL();renderCols();applyLayout()}}
+function renderAll(){if(LIVE&&SRVsym!==sym.id)loadStrategies().then(()=>{renderPicker();renderCols();renderCmp()}).catch(()=>{});if(LIVE&&!RB[sym.id])loadBars(sym.id).then(()=>{loadQuotes().catch(()=>{}).then(renderWL);drawChart()}).catch(()=>{});$("#tvSym").textContent=sym.id;renderContract();renderWL();renderPicker();renderCols();renderCmp();drawChart();const rl=$("#resetLay");if(rl)rl.onclick=()=>{L={chartW:null,colW:{},paneH:null,termH:null};saveL();renderCols();applyLayout()}}
 addEventListener("resize",drawChart);
 function tick(){const t=new Intl.DateTimeFormat("vi-VN",{timeZone:"Asia/Ho_Chi_Minh",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date());$("#clock").innerHTML=t.replace(","," ")+"<small>GMT+7</small>"}
 tick();setInterval(tick,1000);

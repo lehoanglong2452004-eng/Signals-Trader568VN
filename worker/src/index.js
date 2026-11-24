@@ -219,7 +219,8 @@ async function runEngine(env, symbol, rows) {
         t.closed = true; notes.push(t.strategy + ":" + (hitSL ? "sl" : "tp"));
         break;
       }
-      if (meta.be && !meta.moved && meta.risk && (buy ? h >= t.entry + meta.risk : l <= t.entry - meta.risk)) {
+      const beLvl = meta.beAt != null ? meta.beAt : meta.risk ? (buy ? t.entry + meta.risk : t.entry - meta.risk) : null;
+      if (meta.be && !meta.moved && beLvl != null && (buy ? h >= beLvl : l <= beLvl)) {
         sl = t.entry; meta.moved = 1;
         ops.push(env.DB.prepare(`UPDATE trades SET sl = ?, meta = ? WHERE id = ?`).bind(sl, JSON.stringify(meta), t.id));
       }
@@ -249,6 +250,12 @@ async function runEngine(env, symbol, rows) {
   }
 
   // 3) Chạy chiến lược trên nến khung lớn vừa đóng.
+  // Chiến lược dựa trên chỉ báo độc quyền cần nến 1 phút (10 ngày) để tự dựng các khung.
+  let src1 = null;
+  const getSrc = async () => {
+    if (!src1) src1 = (await env.DB.prepare(`SELECT t, o, h, l, c, v FROM bars WHERE symbol = ? AND t >= ? AND t < ? ORDER BY t`).bind(symbol, end - 10 * 86400000, end).all()).results;
+    return src1;
+  };
   for (const tf of closing) {
     const { results } = await env.DB.prepare(`SELECT t, o, h, l, c, v FROM tfbars WHERE symbol = ? AND tf = ? ORDER BY t DESC LIMIT 450`).bind(symbol, tf).all();
     const bars = results.reverse();
@@ -256,7 +263,9 @@ async function runEngine(env, symbol, rows) {
     for (const c of cfgs.filter((x) => x.p.tf === tf)) {
       const S = STRATEGIES[c.id];
       if (bars.length < S.need(c.p)) continue;
-      const out = S.run(bars, c.p) || {}, px = bars[bars.length - 1].c;
+      let out = {};
+      try { out = S.run(bars, c.p, S.src ? { src: await getSrc(), end, symbol } : undefined) || {}; } catch (e) { notes.push(c.id + ":err"); continue; }
+      const px = bars[bars.length - 1].c;
       let cur = open.find((t) => t.strategy === c.id && !t.closed);
       if (cur) {
         const buy = cur.side === "buy";
@@ -268,6 +277,7 @@ async function runEngine(env, symbol, rows) {
       const e = out.entry;
       if (!cur && e && Number.isFinite(e.sl) && Number.isFinite(e.tp) && (e.side === "buy" ? e.sl < px && e.tp > px : e.sl > px && e.tp < px)) {
         const meta = { be: out.be ? 1 : 0, risk: Math.abs(px - e.sl) };
+        if (e.beAt != null && Number.isFinite(e.beAt)) meta.beAt = e.beAt;
         ops.push(env.DB.prepare(
           `INSERT INTO trades (ext_id, strategy, symbol, side, status, entry, sl, tp, created_at, opened_at, ver, meta)
            SELECT NULL, ?, ?, ?, 'open', ?, ?, ?, ?, ?, ?, ?
@@ -421,7 +431,7 @@ export default {
         if (!(await isAuthed(env, req))) return json({ error: "Cần đăng nhập" }, 401, cors);
         const TFS = [60, 180, 300, 900, 1800, 3600, 7200, 14400, 86400, 604800, 2592000];
         const list = Object.entries(INDICATORS).map(([id, I]) => ({
-          id, name: I.name, short: I.short, params: I.params,
+          id, name: I.name, short: I.short, params: I.params.filter((d) => !(I.hide || []).includes(d.k)),
           needs: Object.fromEntries(TFS.map((s) => [s, I.needs(indParams(id, {}), s)])),
         }));
         return json({ indicators: list }, 200, cors);
