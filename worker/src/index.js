@@ -199,6 +199,13 @@ function aggregate(src, tf, end) {
   return out;
 }
 
+// Số nến khung lớn nạp cho chiến lược: mặc định 450, chiến lược cần lịch sử dài hơn khai báo hist(p).
+function histLimit(cfgs, tf) {
+  let m = 450;
+  for (const c of cfgs) if (c.p.tf === tf && STRATEGIES[c.id] && STRATEGIES[c.id].hist) m = Math.max(m, STRATEGIES[c.id].hist(c.p));
+  return Math.min(m, 3000);
+}
+
 async function runEngine(env, symbol, rows) {
   const cfgs = (await loadCfgs(env, symbol)).filter((c) => c.enabled);
   const ops = [], notes = [];
@@ -257,7 +264,7 @@ async function runEngine(env, symbol, rows) {
     return src1;
   };
   for (const tf of closing) {
-    const { results } = await env.DB.prepare(`SELECT t, o, h, l, c, v FROM tfbars WHERE symbol = ? AND tf = ? ORDER BY t DESC LIMIT 450`).bind(symbol, tf).all();
+    const { results } = await env.DB.prepare(`SELECT t, o, h, l, c, v FROM tfbars WHERE symbol = ? AND tf = ? ORDER BY t DESC LIMIT ?`).bind(symbol, tf, histLimit(cfgs, tf)).all();
     const bars = results.reverse();
     if (!bars.length || bars[bars.length - 1].t + tf * 60000 !== end) continue;
     for (const c of cfgs.filter((x) => x.p.tf === tf)) {
@@ -386,7 +393,7 @@ export default {
         const cfgs = await loadCfgs(env, symbol);
         const have = {};
         for (const tf of [...new Set(cfgs.map((c) => c.p.tf))]) {
-          const r = await env.DB.prepare(`SELECT COUNT(*) n FROM (SELECT 1 FROM tfbars WHERE symbol = ? AND tf = ? LIMIT 450)`).bind(symbol, tf).first();
+          const r = await env.DB.prepare(`SELECT COUNT(*) n FROM (SELECT 1 FROM tfbars WHERE symbol = ? AND tf = ? LIMIT ?)`).bind(symbol, tf, histLimit(cfgs, tf)).first();
           have[tf] = r ? r.n : 0;
         }
         const { results: vers } = await env.DB.prepare(`SELECT strategy, ver, params, created_at FROM strat_vers WHERE symbol = ? ORDER BY created_at`).bind(symbol).all();
