@@ -79,3 +79,4 @@ CREATE TABLE IF NOT EXISTS siglog (
 CREATE INDEX IF NOT EXISTS idx_siglog_sym ON siglog (symbol, t);
 CREATE TRIGGER IF NOT EXISTS siglog_no_update BEFORE UPDATE ON siglog BEGIN SELECT RAISE(ABORT, 'siglog bất biến'); END;
 CREATE TRIGGER IF NOT EXISTS siglog_no_delete BEFORE DELETE ON siglog BEGIN SELECT RAISE(ABORT, 'siglog bất biến'); END;
+CREATE INDEX IF NOT EXISTS idx_trades_sym ON trades (symbol, status, closed_at);

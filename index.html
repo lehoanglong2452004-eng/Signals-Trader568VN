@@ -812,7 +812,9 @@ async function api(path,opt={}){const r=await fetch(API+path,Object.assign({},op
   if(r.status===401){tok.set(null);showLogin("Phiên đăng nhập đã hết, nhập lại mật khẩu.");throw new Error("401")}
   if(!r.ok)throw new Error((await r.json().catch(()=>({}))).error||("Lỗi máy chủ "+r.status));return r.json()}
 let pollT=null;
-async function refresh(){try{const d=await api("/api/trades?days=90");LIVE=d.trades||[];await Promise.all([loadQuotes(),loadBars(sym.id),loadStrategies(),loadXI(),loadSpec(),loadLog()]).catch(()=>{});setMode("Live · cập nhật "+new Intl.DateTimeFormat("vi-VN",{timeZone:"Asia/Ho_Chi_Minh",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date()),"live");renderWL();renderPicker();renderCols();renderCmp();drawChart()}
+// Giảm lượt đọc máy chủ: tab ẩn thì không tải; lệnh tải mỗi 60 giây, phí mỗi 5 phút, giá và nến mỗi lần.
+let tAt=0,spAt=0;document.addEventListener("visibilitychange",()=>{if(!document.hidden&&tok.get()&&API)refresh()});
+async function refresh(){if(document.hidden&&LIVE)return;try{if(!LIVE||Date.now()-tAt>55000){const d=await api("/api/trades?days=90");LIVE=d.trades||[];tAt=Date.now()}const spec=Date.now()-spAt>300000?loadSpec().then(()=>spAt=Date.now()):null;await Promise.all([loadQuotes(),loadBars(sym.id),loadStrategies(),loadXI(),spec,loadLog()]).catch(()=>{});setMode("Live · cập nhật "+new Intl.DateTimeFormat("vi-VN",{timeZone:"Asia/Ho_Chi_Minh",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date()),"live");renderWL();renderPicker();renderCols();renderCmp();drawChart()}
   catch(e){if(e.message!=="401")setMode("Mất kết nối máy chủ","err")}}
 function startPoll(){$("#logoutBtn").hidden=false;clearInterval(pollT);refresh();pollT=setInterval(refresh,Math.max(5,+CFG.pollSeconds||10)*1000)}
 function showLogin(msg){$("#login").hidden=false;$("#logoutBtn").hidden=true;$("#loginMsg").textContent=msg||"";clearInterval(pollT);setTimeout(()=>$("#pw").focus(),0)}

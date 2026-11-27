@@ -263,7 +263,39 @@ function histLimit(cfgs, tf) {
   return Math.min(m, 3000);
 }
 
+// Nhớ đệm nến trong isolate để giảm lượt đọc D1 (gói miễn phí chỉ cho 5 triệu dòng/ngày).
+// m1: nến 1 phút 10 ngày gần nhất; tf: nến khung lớn. Thiếu đoạn nào thì chỉ đọc bù đúng đoạn đó.
+const MEM = new Map();
+const D10 = 10 * 86400000;
+const toObj = (r) => ({ t: r[0], o: r[1], h: r[2], l: r[3], c: r[4], v: r[5] || 0 });
+function mergeBars(arr, add, keepFrom, maxN) {
+  for (const b of add) {
+    const L = arr[arr.length - 1];
+    if (L && L.t === b.t) arr[arr.length - 1] = b;
+    else if (!L || b.t > L.t) arr.push(b);
+    else { const i = arr.findIndex((x) => x.t >= b.t); if (arr[i].t === b.t) arr[i] = b; else arr.splice(i, 0, b); }
+  }
+  let cut = 0;
+  if (keepFrom != null) while (cut < arr.length && arr[cut].t < keepFrom) cut++;
+  if (maxN != null) cut = Math.max(cut, arr.length - maxN);
+  if (cut > 0) arr.splice(0, cut);
+}
+async function m1Of(env, symbol, end) {
+  let m = MEM.get(symbol);
+  if (!m) { m = { m1: null, tf: new Map() }; MEM.set(symbol, m); }
+  if (!m.m1) {
+    m.m1 = (await env.DB.prepare(`SELECT t, o, h, l, c, v FROM bars WHERE symbol = ? AND t >= ? AND t < ? ORDER BY t`).bind(symbol, end - D10, end).all()).results;
+    m.m1End = end;
+  } else if (end > m.m1End) {
+    const add = (await env.DB.prepare(`SELECT t, o, h, l, c, v FROM bars WHERE symbol = ? AND t >= ? AND t < ? ORDER BY t`).bind(symbol, m.m1End - 60000, end).all()).results;
+    mergeBars(m.m1, add, end - D10);
+    m.m1End = end;
+  }
+  return m;
+}
+
 async function runEngine(env, symbol, rows) {
+  if (globalThis.__T568_NOCACHE) MEM.clear();
   const cfgs = (await loadCfgs(env, symbol)).filter((c) => c.enabled);
   const ops = [], notes = [];
   const { results: open } = await env.DB.prepare(
@@ -322,12 +354,17 @@ async function runEngine(env, symbol, rows) {
   const tfs = [...new Set(cfgs.map((c) => c.p.tf))];
   const closing = tfs.filter((tf) => end % (tf * 60000) === 0);
   const rebuild = rows.length > 3 ? tfs : closing;
+  if (rows.length > 3) MEM.delete(symbol); // nhận lịch sử: bỏ nhớ đệm, đọc lại từ đầu
+  const mem = await m1Of(env, symbol, end);
   if (rebuild.length) {
     const big = Math.max(...rebuild) * 60000, from = Math.floor(rows[0][0] / big) * big;
-    const { results: src } = await env.DB.prepare(`SELECT t, o, h, l, c, v FROM bars WHERE symbol = ? AND t >= ? AND t < ? ORDER BY t`).bind(symbol, from, end).all();
+    const src = mem.m1.length && mem.m1[0].t <= from ? mem.m1.filter((b) => b.t >= from)
+      : (await env.DB.prepare(`SELECT t, o, h, l, c, v FROM bars WHERE symbol = ? AND t >= ? AND t < ? ORDER BY t`).bind(symbol, from, end).all()).results;
     for (const tf of rebuild) {
-      const agg = aggregate(src, tf, end).map((b) => [b.t, b.o, b.h, b.l, b.c, b.v]);
+      const aggO = aggregate(src, tf, end), agg = aggO.map((b) => [b.t, b.o, b.h, b.l, b.c, b.v]);
       if (!agg.length) continue;
+      const tc = mem.tf.get(tf);
+      if (tc) { if (tc.bars.length && tc.bars[tc.bars.length - 1].t < aggO[0].t - tf * 60000) mem.tf.delete(tf); else mergeBars(tc.bars, aggO, null, tc.n); }
       ops.push(env.DB.prepare(
         `INSERT INTO tfbars (symbol, tf, t, o, h, l, c, v)
          SELECT ?, ?, json_extract(value, '$[0]'), json_extract(value, '$[1]'), json_extract(value, '$[2]'), json_extract(value, '$[3]'), json_extract(value, '$[4]'), json_extract(value, '$[5]')
@@ -340,15 +377,17 @@ async function runEngine(env, symbol, rows) {
 
   // 3) Chạy chiến lược trên nến khung lớn vừa đóng.
   // Chiến lược dựa trên chỉ báo độc quyền cần nến 1 phút (10 ngày) để tự dựng các khung.
-  let src1 = null;
-  const getSrc = async () => {
-    if (!src1) src1 = (await env.DB.prepare(`SELECT t, o, h, l, c, v FROM bars WHERE symbol = ? AND t >= ? AND t < ? ORDER BY t`).bind(symbol, end - 10 * 86400000, end).all()).results;
-    return src1;
-  };
+  const getSrc = async () => mem.m1.slice();
   let ctx = null;
   for (const tf of closing) {
-    const { results } = await env.DB.prepare(`SELECT t, o, h, l, c, v FROM tfbars WHERE symbol = ? AND tf = ? ORDER BY t DESC LIMIT ?`).bind(symbol, tf, histLimit(cfgs, tf)).all();
-    const bars = results.reverse();
+    const need = histLimit(cfgs, tf);
+    let tc = mem.tf.get(tf);
+    if (!tc || tc.n < need) {
+      const { results } = await env.DB.prepare(`SELECT t, o, h, l, c, v FROM tfbars WHERE symbol = ? AND tf = ? ORDER BY t DESC LIMIT ?`).bind(symbol, tf, need).all();
+      tc = { n: need, bars: results.reverse() };
+      mem.tf.set(tf, tc);
+    }
+    const bars = tc.bars.length > need ? tc.bars.slice(-need) : tc.bars.slice();
     if (!bars.length || bars[bars.length - 1].t + tf * 60000 !== end) continue;
     for (const c of cfgs.filter((x) => x.p.tf === tf)) {
       const S = STRATEGIES[c.id];
