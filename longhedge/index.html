@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="vi" data-theme="classic">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LongHedge VN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand">LongHedge VN</div>
+  <nav class="nav" role="tablist">
+    <button id="navT" class="on" role="tab">Terminal</button>
+    <button id="navE" role="tab">Đánh giá chiến lược</button>
+  </nav>
+  <div class="search">
+    <input id="q" autocomplete="off" spellcheck="false" placeholder="Tìm mã: BTC, SOL, XAU, dầu…">
+    <div id="dd" class="dd" hidden></div>
+  </div>
+  <label class="ex"><span class="lbl">Nguồn</span><select id="exSel"></select></label>
+  <div class="seg" role="group" aria-label="Chế độ màu"><button id="mC">Cổ điển</button><button id="mM">Hiện đại</button></div>
+  <button class="ib" id="btnSet" title="Màu sắc và cài đặt" aria-expanded="false">⚙ Cài đặt</button>
+  <button class="ib" id="fsPage" title="Toàn màn hình cả trang">⛶ Trang</button>
+  <div class="clock"><span id="clk">--:--:--</span> <span class="muted">GMT+7</span></div>
+</header>
+<div id="banner" class="banner" hidden></div>
+
+<div id="setPop" class="pop" hidden>
+  <div class="pophd"><span class="lbl">Màu sắc</span><button class="x" data-close>✕</button></div>
+  <div class="row"><span>Màu nhấn</span><input type="color" data-col="acc"></div>
+  <div class="row"><span>Nến tăng</span><input type="color" data-col="up"></div>
+  <div class="row"><span>Nến giảm</span><input type="color" data-col="dn"></div>
+  <div class="row"><span>Nến tăng rỗng ruột</span><input type="checkbox" id="hollow"></div>
+  <div class="row"><span>VWAP</span><input type="color" data-col="vwap"></div>
+  <div class="row"><span>Volume</span><input type="color" data-col="vol"></div>
+  <div class="row"><span>Cỡ chữ</span><span><button class="ib sm" id="fsDn">A−</button> <button class="ib sm" id="fsUp">A+</button></span></div>
+  <div class="row"><button class="ib sm" id="colReset">Màu mặc định</button></div>
+  <div class="pophd" style="margin-top:12px"><span class="lbl">Dữ liệu</span></div>
+  <div class="row"><span>Tự chuyển sàn khi sàn đang dùng lỗi</span><input type="checkbox" id="autoFb"></div>
+  <div class="row"><span>Số nến lịch sử mỗi chiến lược</span><select id="histSel"><option>1500</option><option>3000</option><option>5000</option></select></div>
+  <div class="pophd" style="margin-top:12px"><span class="lbl">Thông số chiến lược</span></div>
+  <p class="note">Thông số bro chỉnh chỉ lưu trên trình duyệt này. Muốn mang sang máy khác thì xuất file rồi nhập lại.</p>
+  <div class="row"><button class="ib sm" id="expP">Xuất file thông số</button><button class="ib sm" id="impP">Nhập file thông số</button><input type="file" id="impF" accept=".json,application/json" hidden></div>
+</div>
+
+<main id="viewT" class="term">
+  <aside class="box wl">
+    <div class="hd"><span class="lbl">Danh mục</span><span class="muted sm">PERP</span></div>
+    <div id="wl" class="wlist"></div>
+    <div class="wlft muted">Gõ ở ô Tìm mã để thêm mã khác</div>
+  </aside>
+  <section class="box chartbox" id="chartBox">
+    <div class="tvbar">
+      <span class="sym" id="symLbl">—</span>
+      <span id="tfBar" class="tfs"></span>
+      <span class="legend">
+        <span><i style="background:var(--c-vwap)"></i>VWAP phiên</span><span><i style="background:var(--buy)"></i>TP</span><span><i style="background:var(--sell)"></i>SL</span>
+        <span class="srcLbl muted" id="srcLbl"></span>
+        <button class="ib sm" id="fsChart" title="Toàn màn hình biểu đồ">⛶ Chart</button>
+      </span>
+    </div>
+    <div class="ohlc" id="ohlc"></div>
+    <div id="chart" class="chart"></div>
+    <div class="chartmsg" id="chartMsg" hidden></div>
+  </section>
+  <section class="box board">
+    <div class="hd"><span class="lbl" id="boardTitle">14 chiến lược chạy song song</span><span class="muted sm" id="engState"></span></div>
+    <div class="tblwrap"><table class="tb" id="tb"></table></div>
+    <div class="det" id="det" hidden></div>
+  </section>
+</main>
+
+<main id="viewE" class="eval" hidden>
+  <section class="box evbox">
+    <div class="evhd">
+      <span class="lbl big">Quy tắc đánh giá của Quỹ giao dịch chuyên nghiệp</span>
+      <span class="muted" id="evSym"></span>
+      <label>Tài khoản (USD) <input type="number" id="acct" min="1000" step="1000"></label>
+      <label>Rủi ro / lệnh (%) <input type="number" id="risk" min="0.05" max="10" step="0.05"></label>
+      <label>Phí mỗi chiều (%) <input type="number" id="fee" min="0" max="1" step="0.005"></label>
+      <label>Tính từ ngày <input type="date" id="from"></label>
+      <button class="ib sm" id="fsEval" title="Toàn màn hình">⛶</button>
+    </div>
+    <div class="rules">
+      <label class="rule"><span class="lbl">Giai đoạn 1</span><span class="rv">+<input type="number" id="rP1" step="0.5" min="0.5">%</span><small>Mục tiêu lợi nhuận</small></label>
+      <label class="rule"><span class="lbl">Giai đoạn 2</span><span class="rv">+<input type="number" id="rP2" step="0.5" min="0.5">%</span><small>Mục tiêu lợi nhuận</small></label>
+      <label class="rule"><span class="lbl">Lỗ tối đa ngày</span><span class="rv">−<input type="number" id="rDL" step="0.5" min="0.5">%</span><small>Theo vốn ban đầu, tính từ số dư đầu ngày</small></label>
+      <label class="rule"><span class="lbl">Lỗ tối đa tổng</span><span class="rv">−<input type="number" id="rTL" step="0.5" min="0.5">%</span><small>Theo vốn ban đầu</small></label>
+      <label class="rule"><span class="lbl">Số ngày giao dịch</span><span class="rv">≥ <input type="number" id="rDays" step="1" min="0"></span><small>Ngày có mở ít nhất 1 lệnh</small></label>
+      <label class="rule"><span class="lbl">Thời hạn</span><span class="rv"><input type="number" id="rMax" step="1" min="0"> ngày</span><small>0 = không giới hạn</small></label>
+    </div>
+    <div class="tblwrap"><table class="tb ev" id="evTb"></table></div>
+    <div id="evDet" class="evdet" hidden></div>
+    <p class="note">Ngày giao dịch tính từ 07:00 sáng giờ Việt Nam (00:00 UTC). Lỗ trong ngày tính cả mức lỗ sâu nhất khi lệnh đang mở (MAE). Mỗi lệnh rủi ro cố định theo vốn ban đầu, phí tính trên giá trị lệnh cả 2 chiều.</p>
+  </section>
+</main>
+
+<footer class="foot muted">Dữ liệu hợp đồng tương lai vĩnh cửu từ API công khai của sàn. Tín hiệu và lãi lỗ là mô phỏng trên nến đã đóng, không phải lời khuyên đầu tư.</footer>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
