@@ -1,19 +1,10 @@
 // LongHedge VN – lấy dữ liệu hợp đồng tương lai vĩnh cửu (perpetual) từ API công khai của các sàn.
 // Mọi hàm trả nến dạng { t (ms, giờ mở nến), o, h, l, c, v } xếp từ cũ đến mới.
-// Coinbase và Kraken chặn gọi thẳng từ trình duyệt (CORS) nên cần một proxy (xem proxy/worker.js).
 
 export const TF_MS = (m) => m * 60000;
-export const EX_ORDER = ["binance", "bybit", "okx", "hyperliquid", "coinbase", "kraken"];
+export const EX_ORDER = ["binance", "bybit", "okx", "hyperliquid"];
 
-let PROXY = "";
-export function setProxy(u) { PROXY = String(u || "").trim().replace(/\/+$/, ""); }
-export const proxyReady = () => !!PROXY;
-
-async function req(url, opt = {}, viaProxy = false) {
-  if (viaProxy) {
-    if (!PROXY) throw new Error("Sàn này cần proxy (Cài đặt → Proxy)");
-    url = PROXY + "/?u=" + encodeURIComponent(url);
-  }
+async function req(url, opt = {}) {
   const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), opt.timeout || 12000);
   try {
     const r = await fetch(url, { ...opt, signal: ctl.signal });
@@ -178,67 +169,7 @@ const hyperliquid = {
   },
 };
 
-// ---------------- Coinbase International (qua proxy) ----------------
-const CB = "https://api.coinbase.com/api/v3/brokerage/market";
-const CB_TF = { 1: "ONE_MINUTE", 5: "FIVE_MINUTE", 15: "FIFTEEN_MINUTE", 30: "THIRTY_MINUTE", 60: "ONE_HOUR", 1440: "ONE_DAY" };
-const coinbase = {
-  name: "Coinbase",
-  proxy: true,
-  async bars(sym, tf, count) {
-    if (!CB_TF[tf]) { const base = tf === 240 ? 60 : 1440, src = await this.bars(sym, base, Math.ceil(count * tf / base) + 2); return aggregate(src, tf); }
-    let out = [], end = Math.floor(Date.now() / 1000);
-    const step = tf * 60 * 300;
-    while (out.length < count) {
-      const r = await req(`${CB}/products/${sym}/candles?granularity=${CB_TF[tf]}&start=${end - step}&end=${end}&limit=300`, {}, true);
-      const L = r.candles || [];
-      if (!L.length) break;
-      out = L.map((k) => ({ t: num(k.start) * 1000, o: num(k.open), h: num(k.high), l: num(k.low), c: num(k.close), v: num(k.volume) })).reverse().concat(out);
-      end -= step;
-    }
-    return uniq(out);
-  },
-  async tickers() {
-    const r = await req(`${CB}/products?product_type=FUTURE&contract_expiry_type=PERPETUAL`, {}, true), o = {};
-    for (const x of r.products || []) o[x.product_id] = { p: num(x.price), ch: num(x.price_percentage_change_24h), qv: num(x.approximate_quote_24h_volume || 0) };
-    return o;
-  },
-  async instruments() {
-    const r = await req(`${CB}/products?product_type=FUTURE&contract_expiry_type=PERPETUAL`, {}, true);
-    return (r.products || []).map((x) => ({ sym: x.product_id, base: (x.base_display_symbol || x.product_id.split("-")[0]), quote: "USDC", kind: "Perp" }));
-  },
-};
-
-// ---------------- Kraken Futures (qua proxy) ----------------
-const KR = "https://futures.kraken.com";
-const KR_TF = { 1: "1m", 5: "5m", 15: "15m", 30: "30m", 60: "1h", 240: "4h", 1440: "1d", 10080: "1w" };
-const kraken = {
-  name: "Kraken",
-  proxy: true,
-  async bars(sym, tf, count) {
-    let out = [], to = Math.floor(Date.now() / 1000);
-    const span = tf * 60 * 2000;
-    while (out.length < count) {
-      const r = await req(`${KR}/api/charts/v1/trade/${sym}/${KR_TF[tf]}?from=${to - span}&to=${to}`, {}, true);
-      const L = r.candles || [];
-      if (!L.length) break;
-      out = L.map((k) => ({ t: num(k.time), o: num(k.open), h: num(k.high), l: num(k.low), c: num(k.close), v: num(k.volume) })).concat(out);
-      to -= span;
-    }
-    return uniq(out);
-  },
-  async tickers() {
-    const r = await req(`${KR}/derivatives/api/v3/tickers`, {}, true), o = {};
-    for (const x of r.tickers || []) { const p = num(x.last), op = num(x.open24h); o[x.symbol] = { p, ch: x.change24h != null ? num(x.change24h) : op ? (p / op - 1) * 100 : 0, qv: num(x.volumeQuote || 0) }; }
-    return o;
-  },
-  async instruments() {
-    const r = await req(`${KR}/derivatives/api/v3/instruments`, {}, true);
-    return (r.instruments || []).filter((x) => /^PF_/.test(x.symbol) && x.tradeable !== false)
-      .map((x) => ({ sym: x.symbol, base: x.symbol.slice(3).replace(/USD$/, "").replace(/^XBT$/, "BTC"), quote: "USD", kind: "Perp" }));
-  },
-};
-
-export const EX = { binance, bybit, okx, hyperliquid, coinbase, kraken };
+export const EX = { binance, bybit, okx, hyperliquid };
 
 // Lấy nến; khung sàn không hỗ trợ thì gộp từ khung nhỏ hơn.
 export async function getBars(ex, sym, tf, count) {
@@ -247,12 +178,12 @@ export async function getBars(ex, sym, tf, count) {
 
 // 8 sản phẩm mặc định và mã tương ứng trên từng sàn (null = sàn không có hợp đồng vĩnh cửu).
 export const DEFAULT_PRODUCTS = [
-  { id: "BTC", label: "Bitcoin", group: "Crypto", map: { binance: "BTCUSDT", bybit: "BTCUSDT", okx: "BTC-USDT-SWAP", hyperliquid: "BTC", coinbase: "BTC-PERP-INTX", kraken: "PF_XBTUSD" } },
-  { id: "ETH", label: "Ethereum", group: "Crypto", map: { binance: "ETHUSDT", bybit: "ETHUSDT", okx: "ETH-USDT-SWAP", hyperliquid: "ETH", coinbase: "ETH-PERP-INTX", kraken: "PF_ETHUSD" } },
-  { id: "WTI", label: "Dầu WTI", group: "Năng lượng", map: { binance: "CLUSDT", bybit: "CLUSDT", okx: "CL-USDT-SWAP", hyperliquid: "xyz:CL", coinbase: null, kraken: null } },
-  { id: "BRENT", label: "Dầu Brent", group: "Năng lượng", map: { binance: "BZUSDT", bybit: "BZUSDT", okx: "BZ-USDT-SWAP", hyperliquid: "xyz:BRENTOIL", coinbase: null, kraken: null } },
-  { id: "XAU", label: "Vàng", group: "Kim loại", map: { binance: "XAUUSDT", bybit: "XAUUSDT", okx: "XAU-USDT-SWAP", hyperliquid: "xyz:GOLD", coinbase: null, kraken: null } },
-  { id: "XAG", label: "Bạc", group: "Kim loại", map: { binance: "XAGUSDT", bybit: "XAGUSDT", okx: "XAG-USDT-SWAP", hyperliquid: "xyz:SILVER", coinbase: null, kraken: null } },
-  { id: "COPPER", label: "Đồng", group: "Kim loại", map: { binance: "COPPERUSDT", bybit: null, okx: "XCU-USDT-SWAP", hyperliquid: "xyz:COPPER", coinbase: null, kraken: null } },
-  { id: "XPT", label: "Bạch kim", group: "Kim loại", map: { binance: "XPTUSDT", bybit: null, okx: "XPT-USDT-SWAP", hyperliquid: "xyz:PLATINUM", coinbase: null, kraken: null } },
+  { id: "BTC", label: "Bitcoin", group: "Crypto", map: { binance: "BTCUSDT", bybit: "BTCUSDT", okx: "BTC-USDT-SWAP", hyperliquid: "BTC" } },
+  { id: "ETH", label: "Ethereum", group: "Crypto", map: { binance: "ETHUSDT", bybit: "ETHUSDT", okx: "ETH-USDT-SWAP", hyperliquid: "ETH" } },
+  { id: "WTI", label: "Dầu WTI", group: "Năng lượng", map: { binance: "CLUSDT", bybit: "CLUSDT", okx: "CL-USDT-SWAP", hyperliquid: "xyz:CL" } },
+  { id: "BRENT", label: "Dầu Brent", group: "Năng lượng", map: { binance: "BZUSDT", bybit: "BZUSDT", okx: "BZ-USDT-SWAP", hyperliquid: "xyz:BRENTOIL" } },
+  { id: "XAU", label: "Vàng", group: "Kim loại", map: { binance: "XAUUSDT", bybit: "XAUUSDT", okx: "XAU-USDT-SWAP", hyperliquid: "xyz:GOLD" } },
+  { id: "XAG", label: "Bạc", group: "Kim loại", map: { binance: "XAGUSDT", bybit: "XAGUSDT", okx: "XAG-USDT-SWAP", hyperliquid: "xyz:SILVER" } },
+  { id: "COPPER", label: "Đồng", group: "Kim loại", map: { binance: "COPPERUSDT", bybit: null, okx: "XCU-USDT-SWAP", hyperliquid: "xyz:COPPER" } },
+  { id: "XPT", label: "Bạch kim", group: "Kim loại", map: { binance: "XPTUSDT", bybit: null, okx: "XPT-USDT-SWAP", hyperliquid: "xyz:PLATINUM" } },
 ];

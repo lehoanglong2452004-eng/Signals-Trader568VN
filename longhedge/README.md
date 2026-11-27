@@ -2,7 +2,7 @@
 
 Terminal tín hiệu cho **hợp đồng tương lai vĩnh cửu** (perpetual), chạy hoàn toàn trên trình duyệt, không cần máy chủ và không cần đăng nhập.
 
-- **Nguồn dữ liệu:** Binance (mặc định), Bybit, OKX, Hyperliquid lấy thẳng từ API công khai của sàn. Coinbase và Kraken chặn gọi từ trình duyệt nên cần proxy nhỏ (`proxy/worker.js`, gói Cloudflare miễn phí là đủ).
+- **Nguồn dữ liệu:** Binance (mặc định), Bybit, OKX, Hyperliquid lấy thẳng từ API công khai của sàn.
 - **Tự chuyển sàn:** sàn đang dùng lỗi 2 lần liên tiếp thì tự chuyển sang sàn kế tiếp có mã đó (tắt được trong Cài đặt).
 - **Danh mục mặc định:** BTC, ETH, dầu WTI, dầu Brent, vàng, bạc, đồng, bạch kim. Mã không có trên sàn đang chọn thì lấy từ sàn khác và ghi rõ nguồn. Gõ ở ô Tìm mã để thêm mã khác.
 - **Chart:** nến, volume, 1 đường VWAP reset mỗi phiên lúc 07:00 giờ Việt Nam (00:00 UTC), điểm MUA/BÁN, đường Vào / TP / SL. Có toàn màn hình cho cả trang và cho riêng chart.

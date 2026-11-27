@@ -1,5 +1,5 @@
 // LongHedge VN – giao diện terminal.
-import { EX, EX_ORDER, DEFAULT_PRODUCTS, setProxy, proxyReady, getBars } from "./exchanges.js";
+import { EX, EX_ORDER, DEFAULT_PRODUCTS, getBars } from "./exchanges.js";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -22,7 +22,7 @@ const DEF_COL = {
 };
 const DEF = {
   theme: "classic", colors: { classic: { ...DEF_COL.classic }, modern: { ...DEF_COL.modern } }, fs: 12,
-  ex: "binance", autoFb: true, hist: 3000, proxy: "",
+  ex: "binance", autoFb: true, hist: 3000,
   custom: [], sel: "BTC", tf: 15, strat: "ema", detTab: "logic", view: "T",
   params: {}, acct: 100000, risk: 1, fee: 0.05, from: "",
   rules: { p1: 10, p2: 5, dl: 5, tl: 10, days: 4, max: 0 },
@@ -33,7 +33,7 @@ S.rules = { ...DEF.rules, ...S.rules };
 S.colors = { classic: { ...DEF_COL.classic, ...(S.colors?.classic || {}) }, modern: { ...DEF_COL.modern, ...(S.colors?.modern || {}) } };
 let saveT = 0;
 const save = () => { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* trình duyệt chặn lưu */ } }, 200); };
-setProxy(S.proxy);
+if (!EX[S.ex]) S.ex = "binance";
 
 // ---------------- Bộ chạy chiến lược (Web Worker) ----------------
 const worker = new Worker(new URL("./engine.js", import.meta.url), { type: "module" });
@@ -46,7 +46,6 @@ worker.onmessage = (ev) => {
   const f = pend.get(m.reqId);
   if (f) { pend.delete(m.reqId); f(m); }
 };
-worker.postMessage({ type: "proxy", url: S.proxy });
 
 let META = [];           // [{id,name,params}]
 const RES = {};          // key ex|sym -> {id: result}
@@ -55,7 +54,7 @@ let runKey = "", runBusy = false, runAgain = false;
 // ---------------- Sản phẩm & sàn ----------------
 const products = () => DEFAULT_PRODUCTS.concat(S.custom);
 const prodOf = (id) => products().find((p) => p.id === id) || DEFAULT_PRODUCTS[0];
-const exOk = (ex) => !EX[ex].proxy || proxyReady();
+const exOk = (ex) => !!EX[ex];
 // Mã của sản phẩm trên sàn ex; undefined = chưa dò (mã tự thêm), null = không có.
 const symOn = (p, ex) => (p.map ? p.map[ex] : undefined);
 function sourceOf(p) {
@@ -106,8 +105,6 @@ $("#btnSet").onclick = () => { setPop.hidden = !setPop.hidden; $("#btnSet").setA
 setPop.querySelector("[data-close]").onclick = () => { setPop.hidden = true; };
 $("#autoFb").checked = S.autoFb; $("#autoFb").onchange = (e) => { S.autoFb = e.target.checked; save(); };
 $("#histSel").value = String(S.hist); $("#histSel").onchange = (e) => { S.hist = +e.target.value; save(); runEngine(true); };
-$("#proxyIn").value = S.proxy;
-$("#proxyIn").onchange = (e) => { S.proxy = e.target.value.trim(); setProxy(S.proxy); worker.postMessage({ type: "proxy", url: S.proxy }); save(); fillEx(); };
 $("#expP").onclick = () => {
   const blob = new Blob([JSON.stringify({ app: "LongHedge VN", saved: new Date().toISOString(), params: S.params }, null, 2)], { type: "application/json" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "longhedge-thong-so.json"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
@@ -132,7 +129,7 @@ function banner(html, ms) {
 setInterval(() => { const d = new Date(Date.now() + VN); $("#clk").textContent = `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())} · ${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`; }, 1000);
 
 function fillEx() {
-  $("#exSel").innerHTML = EX_ORDER.map((e) => `<option value="${e}" ${exOk(e) ? "" : "disabled"}>${EX[e].name}${e === "binance" ? " (mặc định)" : ""}${exOk(e) ? "" : " · cần proxy"}</option>`).join("");
+  $("#exSel").innerHTML = EX_ORDER.map((e) => `<option value="${e}" >${EX[e].name}${e === "binance" ? " (mặc định)" : ""}</option>`).join("");
   $("#exSel").value = S.ex;
 }
 $("#exSel").onchange = (e) => switchEx(e.target.value);
