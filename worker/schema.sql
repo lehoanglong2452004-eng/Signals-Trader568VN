@@ -62,3 +62,20 @@ CREATE TABLE IF NOT EXISTS strat_vers (
   strategy TEXT NOT NULL, symbol TEXT NOT NULL, ver TEXT NOT NULL, params TEXT NOT NULL, created_at INTEGER,
   PRIMARY KEY (strategy, symbol, ver)
 );
+
+-- ===== Quy đổi R, phí, MAE/MFE, nhật ký tín hiệu =====
+ALTER TABLE trades ADD COLUMN fee REAL;   -- phí $ mỗi lệnh (1 lot) lúc vào lệnh
+ALTER TABLE trades ADD COLUMN pv REAL;    -- $ cho 1 đơn vị giá, 1 lot (hợp đồng CME)
+ALTER TABLE trades ADD COLUMN mae REAL;   -- đi ngược nhiều nhất (theo giá)
+ALTER TABLE trades ADD COLUMN mfe REAL;   -- đi thuận nhiều nhất (theo giá)
+-- Phí từng mã (mặc định $40/lệnh).
+CREATE TABLE IF NOT EXISTS sym_cfg (symbol TEXT PRIMARY KEY, fee REAL);
+-- Nhật ký tín hiệu bất biến: ghi một lần, không sửa, không xóa (trigger chặn).
+CREATE TABLE IF NOT EXISTS siglog (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER NOT NULL, symbol TEXT NOT NULL, strategy TEXT NOT NULL, ver TEXT,
+  side TEXT NOT NULL, entry REAL, sl REAL, tp REAL, risk REAL, pv REAL, fee REAL,
+  session TEXT, regime TEXT, adx REAL, blocked INTEGER NOT NULL DEFAULT 0, trade_id INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_siglog_sym ON siglog (symbol, t);
+CREATE TRIGGER IF NOT EXISTS siglog_no_update BEFORE UPDATE ON siglog BEGIN SELECT RAISE(ABORT, 'siglog bất biến'); END;
+CREATE TRIGGER IF NOT EXISTS siglog_no_delete BEFORE DELETE ON siglog BEGIN SELECT RAISE(ABORT, 'siglog bất biến'); END;

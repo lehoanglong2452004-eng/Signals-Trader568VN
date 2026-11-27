@@ -106,6 +106,11 @@ canvas{display:block;width:100%;height:100%}
 .strip div:last-child{border-right:0}
 .strip .v{font-size:15px;margin-top:2px}
 .sizer{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 8px;border-bottom:1px solid var(--line);font-size:11px;color:var(--muted)}
+.strip .sub{display:block;color:var(--muted);font-size:10.5px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip.s2 .v{font-size:13px}
+.cons{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;padding:6px 12px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11.5px;color:var(--muted)}.cons b{color:var(--fg,#e6e6e6);font-weight:600}.cons b.up{color:var(--buy)}.cons b.down{color:var(--sell)}
+.rkt tfoot td{position:sticky;bottom:0;background:#121218;border-top:1px solid var(--amber);cursor:default}.rkt tfoot .nm{color:var(--amber)}
+.ht{width:100%;border-collapse:collapse;table-layout:fixed}.ht td{white-space:normal;overflow:hidden;text-overflow:ellipsis}.ht .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ht .sub{display:block;color:var(--muted);font-size:10px;margin-top:1px}
 .sizer input{width:70px;background:var(--bg);border:1px solid var(--line);padding:2px 5px;font-size:11.5px;color:var(--amber)}
 .ctabs{display:flex;border-bottom:1px solid var(--line)}
 .ctabs button{flex:1;background:none;border:0;border-bottom:2px solid transparent;padding:6px 4px;cursor:pointer;color:var(--muted);font-family:var(--cond);text-transform:uppercase;letter-spacing:.06em;font-size:11.5px}
@@ -369,6 +374,8 @@ async function loadBars(id){const r=RB[id]||(RB[id]={bars:[],last:0});
 const SRV={}; let SRVsym=null,SRVat=0;
 async function loadStrategies(force){if(!force&&SRVsym===sym.id&&Date.now()-SRVat<300000)return;const d=await api("/api/strategies?symbol="+encodeURIComponent(sym.id));
   SRVsym=sym.id;SRVat=Date.now();for(const k in SRV)delete SRV[k];(d.strategies||[]).forEach(x=>{SRV[x.id]=x;if(!IND.some(i=>i.id===x.id)){IND.push({id:x.id,name:x.name,c:"--i"+(IND.length%13+1),wr:.5,logic:{}});assign[x.id]=ALL}});SRV._role=d.role;setRole(d.role)}
+async function loadSpec(){const d=await api("/api/spec");for(const k in SPEC)delete SPEC[k];Object.assign(SPEC,d.spec||{})}
+async function loadLog(force){if(!force&&SIGsym===sym.id&&Date.now()-(loadLog.at||0)<60000)return;const d=await api("/api/siglog?symbol="+encodeURIComponent(sym.id));SIGLOG=d.log||[];SIGsym=sym.id;loadLog.at=Date.now()}
 async function loadQuotes(){const d=await api("/api/quotes?symbols=*");for(const k in QT)delete QT[k];Object.assign(QT,d.quotes||{});syncSymbols()}
 // Mã nào có giá gửi về mà chưa có trong danh sách thì tự thêm; mã mới gắn lần đầu tự vào bảng giá.
 function syncSymbols(){let ch=false,seen=[];try{seen=JSON.parse(localStorage.getItem("t568-wl-seen")||"[]")}catch(e){}
@@ -382,12 +389,12 @@ function rootOf(tk){let t=String(tk||"").toUpperCase();t=t.includes(":")?t.split
   if(/^(XAU|XAG)/.test(t))return t.slice(0,3);if(t.endsWith("1!")||t.endsWith("2!"))return t.slice(0,-2);
   const m=t.match(/^([A-Z]{1,3}?)[FGHJKMNQUVXZ]\d{2,4}$/);return m?m[1]:t}
 const fmtT=ms=>{const d=new Date(ms);return new Intl.DateTimeFormat("vi-VN",{timeZone:"Asia/Ho_Chi_Minh",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).format(d).replace(",","")};
-const dayKey=ms=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Ho_Chi_Minh"}).format(new Date(ms));
+const dayKey=ms=>new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Prague"}).format(new Date(ms));
 function curVer(ind){const s=st(ind.id),sv=SRV[ind.id];return s.ver||(sv?sv.ver:"all")}
 function liveTrades(ind){const v=curVer(ind),rows=LIVE.filter(r=>r.strategy===ind.id&&(r.ver?r.symbol===sym.id:rootOf(r.symbol)===sym.root)&&(v==="all"||r.ver===v));
-  const closed=rows.filter(r=>r.status==="closed"&&r.exit_price!=null&&r.entry!=null).sort((a,b)=>a.closed_at-b.closed_at).map(r=>{const dir=r.side==="buy"?1:-1,risk=r.sl!=null?Math.abs(r.entry-r.sl):0;
-    return{ot:r.opened_at,ct:r.closed_at,d:dayKey(r.closed_at),t:fmtT(r.closed_at),dir,e:r.entry,x:r.exit_price,R:risk?(r.exit_price-r.entry)*dir/risk:0,res:r.result||"exit",sym:r.symbol}});
-  const live=rows.filter(r=>r.status==="open"||r.status==="pending").sort((a,b)=>b.created_at-a.created_at).map(r=>({ot:r.opened_at||r.created_at,dir:r.side==="buy"?1:-1,e:r.entry,sl:r.sl,tp:r.tp,st:r.status==="open"?"act":"pend",t:r.status==="open"?fmtT(r.opened_at||r.created_at):"Chờ khớp · "+fmtT(r.created_at),sym:r.symbol}));
+  const closed=rows.filter(r=>r.status==="closed"&&r.exit_price!=null&&r.entry!=null).sort((a,b)=>a.closed_at-b.closed_at).map(r=>{const dir=r.side==="buy"?1:-1,risk=riskOf(r),pv=r.pv||pvOf(),fee=r.fee!=null?r.fee:feeOf(),gross=(r.exit_price-r.entry)*dir*pv,net=gross-fee;
+    return{id:r.id,ot:r.opened_at,ct:r.closed_at,d:dayKey(r.closed_at),t:fmtT(r.closed_at),dir,e:r.entry,x:r.exit_price,risk,pv,fee,gross,net,R:risk?net/(risk*pv):0,maeR:risk&&r.mae!=null?r.mae/risk:null,mfeR:risk&&r.mfe!=null?r.mfe/risk:null,res:r.result||"exit",sym:r.symbol,ver:r.ver}});
+  const live=rows.filter(r=>r.status==="open"||r.status==="pending").sort((a,b)=>b.created_at-a.created_at).map(r=>({id:r.id,ot:r.opened_at||r.created_at,dir:r.side==="buy"?1:-1,e:r.entry,sl:r.sl,tp:r.tp,risk:riskOf(r),pv:r.pv,fee:r.fee,maeR:riskOf(r)&&r.mae!=null?r.mae/riskOf(r):null,mfeR:riskOf(r)&&r.mfe!=null?r.mfe/riskOf(r):null,st:r.status==="open"?"act":"pend",t:r.status==="open"?fmtT(r.opened_at||r.created_at):"Chờ khớp · "+fmtT(r.created_at),sym:r.symbol}));
   return{closed,live}}
 function trades(ind){if(LIVE)return liveTrades(ind);const r=rng(ind.id+sym.id),px=sym.px,out=[],sl=px*.006;let day=1;
   for(let k=0;k<16;k++){day+=1+Math.floor(r()*2.2);if(day>23)break;const dir=r()<.5?1:-1,e=px*(1+(r()-.5)*.05),win=r()<ind.wr,R=win?1.3+r()*1.2:-1,x=e+dir*R*sl,h=String(1+Math.floor(r()*22)).padStart(2,"0")+":"+(r()<.5?"00":"30");
@@ -395,46 +402,64 @@ function trades(ind){if(LIVE)return liveTrades(ind);const r=rng(ind.id+sym.id),p
   const dir=r()<.5?1:-1,e=px*(1-dir*.002),live=[{dir,e,sl:e-dir*px*.006,tp:e+dir*px*.012,st:"act",t:"24/11 "+String(8+Math.floor(r()*8)).padStart(2,"0")+":00"}];
   if(r()<.7){const d2=-dir,e2=px*(1+d2*.004);live.push({dir:d2,e:e2,sl:e2-d2*px*.005,tp:e2+d2*px*.011,st:"pend",t:"Chờ khớp · Limit"})}
   return{closed:out,live}}
-const pnl=(t,s)=>(t.x-t.e)*t.dir*s.lots*s.size*sym.unit;
+// 1 lot cho mỗi chiến lược. $ và R đều là sau phí; 1R = khoảng cách entry→stop lúc phát × giá trị 1 điểm (hợp đồng CME).
+const SPEC={};let SIGLOG=[],SIGsym=null;
+const pvOf=()=>{const x=SPEC[sym.id];return x&&x.pv?x.pv:sym.size*sym.unit};
+const feeOf=()=>{const x=SPEC[sym.id];return x&&x.fee!=null?x.fee:40};
+const riskOf=r=>r.risk!=null?+r.risk:r.sl!=null&&r.entry!=null?Math.abs(r.entry-r.sl):0;
+const rr=v=>{if(v==null||!isFinite(v))return"—";v=Math.round(v*100)/100;return(v>=0?"+":"−")+Math.abs(v).toFixed(2)+"R"};
+const lastPx=()=>{const RB0=RB[sym.id];return (QT[sym.id]&&QT[sym.id].c)||(RB0&&RB0.bars.length?RB0.bars[RB0.bars.length-1].c:sym.px)};
+function flt(t){const pv=t.pv||pvOf(),fee=t.fee!=null?t.fee:feeOf(),net=(lastPx()-t.e)*t.dir*pv-fee;return{net,R:t.risk?net/(t.risk*pv):null}}
+const pnl=t=>t.net!=null?t.net:(t.x-t.e)*t.dir*pvOf()-feeOf();
+// Tổng hợp một chiến lược: đã chốt | đang mở | tổng. WR và expectancy chỉ tính trên lệnh đã đóng.
+function agg2(ind){const T=trades(ind),cl=T.closed,act=T.live.filter(t=>t.st==="act"),pend=T.live.length-act.length;
+  const cU=cl.reduce((a,t)=>a+pnl(t),0),cR=cl.reduce((a,t)=>a+(t.R||0),0),F=act.map(flt),oU=F.reduce((a,f)=>a+f.net,0),oR=F.reduce((a,f)=>a+(f.R||0),0);
+  return{T,cl,act,pend,cU,cR,oU,oR,tU:cU+oU,tR:cR+oR,n:cl.length,wr:cl.length?cl.filter(t=>pnl(t)>0).length/cl.length*100:null,exp:cl.length?cR/cl.length:null}}
+function vLab(ind,ver){const sv=LIVE?SRV[ind.id]:null;if(!sv||!ver||ver==="all")return ver==="all"?"Tất cả":ver||"";const L=sv.vers.map(v=>v.ver);let i=L.indexOf(ver);if(i<0)i=L.length;return "v"+(i+1)}
+const RES={tp:["p-tp","TP"],sl:["p-sl","SL"],dl:["p-no","5%/ngày"],exit:["p-wait","Thoát"]};
 
 function renderPicker(){const av=IND.filter(i=>assign[i.id].includes(sym.root));open=open.filter(id=>av.some(i=>i.id===id)).slice(0,1);if(!open.length&&av.length)open=[av[0].id];
   $("#picker").innerHTML=`<span class="lbl">Tín hiệu cho ${sym.id}</span>`+(av.length?av.map(i=>`<button class="ichip" data-id="${i.id}" aria-pressed="${open.includes(i.id)}"><i style="background:var(${i.c})"></i>${i.name} </button>`).join(""):`<span class="muted">Chưa có chỉ báo tín hiệu nào cho mã này.</span>`);
   document.querySelectorAll(".ichip").forEach(b=>b.onclick=()=>{open=[b.dataset.id];detail=true;renderAll()})}
 
 function colHTML(ind){if(!detail){const cw=L.colW[ind.id];return `<section class="col ov" style="--c:var(--amber)${cw?`;flex:0 0 ${cw}px;min-width:${cw}px;max-width:none`:''}" data-id="${ind.id}">${rankHTML()||'<div class="empty">Mã này chưa có chiến lược nào.</div>'}</section>`}
-  if(LIVE&&SRV[ind.id])ind={...ind,name:SRV[ind.id].name};const s=st(ind.id),T=trades(ind),cl=T.closed,f=dp(sym.px),pl=cl.map(t=>pnl(t,s)),tot=pl.reduce((a,b)=>a+b,0),wr=cl.length?pl.filter(v=>v>0).length/cl.length*100:null,fx=v=>v==null?"—":Number(v).toFixed(f);let body="";
-  if(s.tab==="sig"){body=T.live.length?T.live.map(t=>{const fl=LIVE?null:(sym.px-t.e)*t.dir*s.lots*s.size*sym.unit;
+  if(LIVE&&SRV[ind.id])ind={...ind,name:SRV[ind.id].name};const s=st(ind.id),A=agg2(ind),T=A.T,cl=A.cl,f=dp(sym.px),fx=v=>v==null?"—":Number(v).toFixed(f),adm=LIVE&&SRV._role==="admin";let body="";
+  const mm=t=>`<span class="sub">MAE ${t.maeR==null?"—":t.maeR.toFixed(2)+"R"} · MFE ${t.mfeR==null?"—":t.mfeR.toFixed(2)+"R"}</span>`;
+  if(s.tab==="sig"){body=T.live.length?T.live.map(t=>{const F=t.st==="act"?flt(t):null;
     return `<div class="sig"><div class="t1"><span class="pill ${t.dir>0?'p-buy':'p-sell'}">${t.dir>0?'Mua':'Bán'}</span><span class="pill ${t.st==='act'?'p-act':'p-pend'}">${t.st==='act'?'Đang mở':'Chờ khớp'}</span><span class="tm num">${t.t}</span></div>
      <div class="lv num"><div><span>Entry</span>${fx(t.e)}</div><div><span>SL</span>${fx(t.sl)}</div><div><span>TP</span>${fx(t.tp)}</div></div>
-     <div class="ft"><span class="num ${t.st==='act'&&fl!=null?(fl>=0?'up':'down'):'muted'}">${t.st!=='act'?'Chưa khớp lệnh':fl==null?(t.sym||''):'Tạm tính '+usd(fl)}</span><a href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(t.sym||sym.id)}" target="_blank" rel="noopener">Mở trên TradingView ↗</a></div></div>`}).join(""):`<div class="empty">Chưa có lệnh đang mở hay chờ khớp cho ${sym.root}. Tín hiệu mới sẽ hiện ở đây ngay khi máy chủ phát hiện.</div>`}
-  else if(s.tab==="hist"){body=!cl.length?`<div class="empty">Chưa có lệnh nào đã đóng.</div>`:`<table><thead><tr><th>Đóng</th><th>Hướng</th><th class="r">Vào</th><th class="r">Ra</th><th>KQ</th><th class="r">USD</th></tr></thead><tbody>`+[...cl].reverse().map(t=>{const v=pnl(t,s);return `<tr><td class="num">${t.t}</td><td><span class="pill ${t.dir>0?'p-buy':'p-sell'}">${t.dir>0?'Mua':'Bán'}</span></td><td class="r num">${fx(t.e)}</td><td class="r num">${fx(t.x)}</td><td><span class="pill ${t.res==='tp'?'p-tp':t.res==='sl'?'p-sl':'p-wait'}">${t.res==='tp'?'TP':t.res==='sl'?'SL':'Thoát'}</span></td><td class="r num ${v>0?'up':'down'}">${usd(v)}</td></tr>`}).join("")+`</tbody></table>`}
-  else body=cl.length?evalHTML(ind,s,cl,pl):`<div class="empty">Cần ít nhất một lệnh đã đóng để đánh giá.</div>`;
+     <div class="ft"><span class="num ${F?(F.net>=0?'up':'down'):'muted'}">${!F?'Chưa khớp lệnh':'Tạm tính '+usd(F.net)+' · '+rr(F.R)+' (sau phí)'}${F?mm(t):''}</span><a href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(t.sym||sym.id)}" target="_blank" rel="noopener">Mở trên TradingView ↗</a></div></div>`}).join(""):`<div class="empty">Chưa có lệnh đang mở hay chờ khớp cho ${sym.root}. Tín hiệu mới sẽ hiện ở đây ngay khi máy chủ phát hiện.</div>`}
+  else if(s.tab==="hist"){const logged=new Set(SIGLOG.map(x=>x.trade_id));body=!cl.length?`<div class="empty">Chưa có lệnh nào đã đóng.</div>`:`<table class="ht"><thead><tr><th style="width:23%">Đóng</th><th style="width:13%">Hướng</th><th class="r" style="width:17%">Vào → Ra</th><th style="width:14%">KQ</th><th class="r" style="width:16%">R · MAE/MFE</th><th class="r">USD</th></tr></thead><tbody>`+[...cl].reverse().map(t=>{const v=pnl(t),R=RES[t.res]||RES.exit;return `<tr><td class="num">${t.t}${LIVE&&!logged.has(t.id)?'<span class="sub">trước log</span>':''}</td><td><span class="pill ${t.dir>0?'p-buy':'p-sell'}">${t.dir>0?'Mua':'Bán'}</span></td><td class="r num">${fx(t.e)}<span class="sub">${fx(t.x)}</span></td><td><span class="pill ${R[0]}">${R[1]}</span></td><td class="r num ${t.R>0?'up':t.R<0?'down':''}">${rr(t.R)}<span class="sub">${t.maeR==null?"—":t.maeR.toFixed(1)} / ${t.mfeR==null?"—":t.mfeR.toFixed(1)}</span></td><td class="r num ${v>0?'up':'down'}">${usd(v)}<span class="sub">phí $${(t.fee!=null?t.fee:feeOf()).toFixed(0)}</span></td></tr>`}).join("")+`</tbody></table>`}
+  else if(s.tab==="log"){const L2=SIGLOG.filter(x=>x.strategy===ind.id);body=!L2.length?`<div class="empty">Chưa có tín hiệu nào trong nhật ký. Từ nay mỗi tín hiệu được ghi một lần lúc phát (thời điểm, hướng, giá vào, stop, target, phiên, trạng thái thị trường) và không sửa, không xóa được.</div>`:`<table class="ht"><thead><tr><th style="width:22%">Phát lúc</th><th style="width:13%">Hướng</th><th class="r" style="width:20%">Vào / SL · TP</th><th style="width:24%;padding-left:10px">Bối cảnh</th><th>Trạng thái</th></tr></thead><tbody>`+L2.map(x=>`<tr><td class="num">${fmtT(x.t)}<span class="sub">${vLab(ind,x.ver)} · ${x.ver||""}</span></td><td><span class="pill ${x.side==='buy'?'p-buy':'p-sell'}">${x.side==='buy'?'Mua':'Bán'}</span></td><td class="r num">${fx(x.entry)}<span class="sub">SL ${fx(x.sl)}</span><span class="sub">TP ${fx(x.tp)}</span></td><td style="padding-left:10px">Phiên ${x.session||"—"}<span class="sub">${x.regime||"chưa đủ nến H1"}</span>${x.adx!=null?`<span class="sub">ADX ${x.adx.toFixed(0)}</span>`:""}</td><td>${x.blocked?'<span class="pill p-no">Bị chặn</span><span class="sub">chạm lỗ 5%/ngày</span>':'<span class="pill p-act">Đã vào</span>'}</td></tr>`).join("")+`</tbody></table>`}
+  else body=cl.length?evalHTML(ind,s,cl,cl.map(t=>pnl(t))):`<div class="empty">Cần ít nhất một lệnh đã đóng để đánh giá.</div>`;
   const sv=LIVE?SRV[ind.id]:null,lg=(sv&&sv.logic)||ind.logic;
   const logic=s.logic?`<div class="logic">${Object.entries(lg).map(([k,v])=>`<h4>${k}</h4><ul>${v.map(x=>`<li>${x}</li>`).join("")}</ul>`).join("")}${sv?paramsHTML(ind,sv):`<div class="note">Thông số riêng cho ${sym.root}, đã tinh chỉnh theo mã này. Chỉ xem, không sửa được.</div>`}</div>`:"";
   const warm=sv&&sv.warm.have<sv.warm.need?`<div class="warm">Đang khởi động: có ${sv.warm.have}/${sv.warm.need} nến ${sv.warm.tf} phút. Chiến lược bắt đầu ra tín hiệu khi đủ nến.</div>`:"";
-  const verSel=sv?`<div class="verbar"><label>Bộ thông số <select data-ver="${ind.id}">${[...sv.vers.map(v=>v.ver),sv.ver].filter((v,i,a)=>a.indexOf(v)===i).reverse().map(v=>`<option value="${v}"${curVer(ind)===v?' selected':''}>${v}${v===sv.ver?' · đang chạy':''}</option>`).join("")}<option value="all"${curVer(ind)==="all"?' selected':''}>Tất cả</option></select></label></div>`:"";
+  const verSel=sv?`<div class="verbar"><label>Bộ thông số <select data-ver="${ind.id}">${[...sv.vers.map(v=>v.ver),sv.ver].filter((v,i,a)=>a.indexOf(v)===i).reverse().map(v=>`<option value="${v}"${curVer(ind)===v?' selected':''}>${vLab(ind,v)} · ${v}${v===sv.ver?' · đang chạy':''}</option>`).join("")}<option value="all"${curVer(ind)==="all"?' selected':''}>Tất cả</option></select></label></div>`:"";
+  const cell=(l,u,R,sub)=>`<div><span class="lbl">${l}</span><div class="v num ${u>0?'up':u<0?'down':''}">${rr(R)}</div><span class="sub num">${usd(u)} · ${sub}</span></div>`;
   const cw=L.colW[ind.id];return `<section class="col" style="--c:var(${ind.c})${cw?`;flex:0 0 ${cw}px;min-width:${cw}px;max-width:none`:''}" data-id="${ind.id}">
    <div class="col-h"><i></i><h3>${ind.name}</h3><small>${sym.id} · ${LIVE?"dữ liệu thật":"dữ liệu mẫu"}</small><button class="back" data-back title="Quay lại bảng xếp hạng">← Xếp hạng</button></div>
-   <div class="strip"><div><span class="lbl">Lãi lỗ</span><div class="v num ${tot>=0?'up':'down'}">${cl.length?usd(tot):"—"}</div></div><div><span class="lbl">Win rate</span><div class="v num">${wr==null?"—":wr.toFixed(0)+"%"}</div></div><div><span class="lbl">Số lệnh</span><div class="v num">${cl.length}</div></div></div>
-   <div class="sizer"><label>Lot <input type="number" min="0.01" step="0.01" value="${s.lots}" data-k="lots" id="lots-${ind.id}"></label><label>Quy mô/lot <input type="number" min="1" value="${s.size}" data-k="size" id="size-${ind.id}"></label><span>${sym.unit<1?"giá theo cent":"USD/điểm"}</span></div>
-   ${verSel}${warm}<button class="logicbtn" data-logic="${ind.id}" aria-expanded="${!!s.logic}"><span>⚙ Cài đặt thông số</span><span>${s.logic?"▴":"▾"}</span></button>${!s.logic?"":LIVE&&SRV._role==="admin"?logic:`<div class="noaccess">🔒 Bạn không có quyền truy cập. Chỉ quản trị mới xem và chỉnh được thông số của chiến lược.</div>`}
-   ${s.logic?"":`<div class="ctabs" role="tablist">${[["sig","Tín hiệu"],["hist","Lịch sử"],["eval","Đánh giá"]].map(([k,l])=>`<button role="tab" aria-selected="${s.tab===k}" data-tab="${k}">${l}</button>`).join("")}</div>
+   <div class="strip">${cell("Đã chốt",A.cU,A.cR,A.n+" lệnh đóng")}${cell("Đang mở",A.oU,A.oR,A.act.length+" lệnh mở")}${cell("Tổng",A.tU,A.tR,"chốt + mở")}</div>
+   <div class="strip s2"><div><span class="lbl">Win rate</span><div class="v num">${A.wr==null?"—":A.wr.toFixed(0)+"%"}</div><span class="sub">lệnh đã đóng</span></div><div><span class="lbl">Expectancy</span><div class="v num">${A.exp==null?"—":rr(A.exp)}</div><span class="sub">R TB/lệnh đóng</span></div><div><span class="lbl">Số lệnh</span><div class="v num">${A.n} / ${A.act.length}</div><span class="sub">đóng / mở</span></div></div>
+   <div class="sizer"><span>1 lot · 1 điểm = <b class="num">$${pvOf().toLocaleString("en-US",{maximumFractionDigits:2})}</b> (CME)</span><label>Phí/lệnh $ <input type="number" min="0" step="1" value="${feeOf()}" id="fee-${ind.id}" data-fee${adm?'':' disabled title="Chỉ quản trị chỉnh được phí"'}></label><span class="muted" id="fmsg-${ind.id}">${adm?'riêng cho '+sym.root:''}</span></div>
+   ${verSel}${warm}<button class="logicbtn" data-logic="${ind.id}" aria-expanded="${!!s.logic}"><span>⚙ Cài đặt thông số</span><span>${s.logic?"▴":"▾"}</span></button>${!s.logic?"":adm?logic:`<div class="noaccess">🔒 Bạn không có quyền truy cập. Chỉ quản trị mới xem và chỉnh được thông số của chiến lược.</div>`}
+   ${s.logic?"":`<div class="ctabs" role="tablist">${[["sig","Tín hiệu"],["hist","Lịch sử"],["log","Nhật ký"],["eval","Đánh giá"]].map(([k,l])=>`<button role="tab" aria-selected="${s.tab===k}" data-tab="${k}">${l}</button>`).join("")}</div>
    <div class="cbody">${body}</div>`}</section>`}
 
 function paramsHTML(ind,sv){const adm=SRV._role==="admin";
   return `<h4>Thông số trên ${sym.id} · bộ ${sv.ver}</h4><div class="prm">${sv.params.map(d=>`<label><span>${d.label}</span>${d.options?`<select data-pk="${d.k}"${adm?'':' disabled'}>${d.options.map(o=>`<option${o==d.v?' selected':''}>${o}</option>`).join("")}</select>`:`<input type="number" data-pk="${d.k}" value="${d.v}" min="${d.min}" max="${d.max}" step="${d.step}"${adm?'':' disabled'}>`}</label>`).join("")}</div>
    ${adm?`<div class="note">Lưu thông số khác sẽ tạo bộ thông số mới. Lịch sử và đánh giá tách riêng theo từng bộ, chọn ở ô "Bộ thông số". Lệnh đang mở vẫn được theo dõi đến khi đóng.</div><div class="prmact"><button class="savep" data-save="${ind.id}">Lưu thông số</button><button class="resetp" data-def="${ind.id}">Về mặc định</button><span class="muted" id="pmsg-${ind.id}"></span></div>`:`<div class="note">Chỉ quản trị mới chỉnh được thông số.</div>`}`}
-function statsOf(ind,s){const cl=trades(ind).closed,pl=cl.map(t=>pnl(t,s)),A=s.acct;if(!cl.length)return null;const days={};cl.forEach((t,i)=>days[t.d]=(days[t.d]||0)+pl[i]);
+function statsOf(ind,s){const cl=trades(ind).closed,pl=cl.map(t=>pnl(t)),A=s.acct;if(!cl.length)return null;const days={};cl.forEach((t,i)=>days[t.d]=(days[t.d]||0)+pl[i]);
   let eq=A,lo=A;pl.forEach(v=>{eq+=v;lo=Math.min(lo,eq)});const prof=eq-A,worst=Math.min(0,...Object.values(days)),nd=Object.keys(days).length,maxLoss=Math.min(0,lo-A),tgt=A*s.phase/100;
   const w=pl.filter(v=>v>0),gw=w.reduce((a,b)=>a+b,0),gl=-pl.filter(v=>v<0).reduce((a,b)=>a+b,0),best=Math.max(...Object.values(days));
   const breach=-worst>=A*.05||-maxLoss>=A*.1,pass=!breach&&prof>=tgt&&nd>=4;
-  return{prof,pct:prof/A*100,tgtPct:prof/tgt*100,worst,maxLoss,nd,n:cl.length,wr:w.length/cl.length*100,pf:gl?gw/gl:null,exp:cl.reduce((a,t)=>a+t.R,0)/cl.length,cons:prof>0?best/prof*100:null,verdict:breach?"no":pass?"ok":"wait",okT:prof>=tgt,okD:-worst<A*.05,okM:-maxLoss<A*.1,okN:nd>=4}}
+  return{prof,pct:prof/A*100,tgtPct:prof/tgt*100,worst,maxLoss,nd,n:cl.length,wr:w.length/cl.length*100,pf:gl?gw/gl:null,R:cl.reduce((a,t)=>a+t.R,0),exp:cl.reduce((a,t)=>a+t.R,0)/cl.length,cons:prof>0?best/prof*100:null,verdict:breach?"no":pass?"ok":"wait",okT:prof>=tgt,okD:-worst<A*.05,okM:-maxLoss<A*.1,okN:nd>=4}}
 function cmpHTML(cur,S,s){
   const rows=[["Kết quả",r=>r.verdict,null,v=>`<span class="pill ${v==='no'?'p-no':v==='ok'?'p-ok':'p-wait'}">${v==='no'?'Vi phạm':v==='ok'?'Đạt':'Đang chạy'}</span>`],
    ["Lãi lỗ",r=>r.prof,1,v=>`<span class="${v>=0?'up':'down'}">${usd(v)}</span>`],["Lợi nhuận % vốn",r=>r.pct,1,v=>v.toFixed(2)+"%"],
    ["Đạt mục tiêu",r=>r.tgtPct,1,v=>Math.max(0,v).toFixed(0)+"%"],["Ngày lỗ nhất",r=>r.worst,1,v=>usd(v)],["Sụt vốn sâu nhất",r=>r.maxLoss,1,v=>usd(v)],
    ["Số ngày giao dịch",r=>r.nd,1,v=>v],["Số lệnh",r=>r.n,null,v=>v],["Win rate",r=>r.wr,1,v=>v.toFixed(1)+"%"],["Profit factor",r=>r.pf,1,v=>v==null?"—":v.toFixed(2)],
-   ["Expectancy",r=>r.exp,1,v=>(v>=0?"+":"")+v.toFixed(2)+" R"],["Ngày tốt nhất / tổng lãi",r=>r.cons,-1,v=>v==null?"—":v.toFixed(0)+"%"]];
+   ["R đã chốt (sau phí)",r=>r.R,1,v=>rr(v)],["Expectancy",r=>r.exp,1,v=>(v>=0?"+":"")+v.toFixed(2)+" R"],["Ngày tốt nhất / tổng lãi",r=>r.cons,-1,v=>v==null?"—":v.toFixed(0)+"%"]];
   const body=rows.map(([l,g,dir,f])=>{const vals=S.map(x=>x.r?g(x.r):null),nums=vals.filter(v=>typeof v==="number");const best=dir&&nums.length>1?(dir>0?Math.max(...nums):Math.min(...nums)):null;
     return `<tr><td>${l}</td>${vals.map(v=>`<td class="r num"${best!=null&&v===best?' style="background:color-mix(in srgb,var(--amber) 16%,transparent)"':''}>${v==null?"—":f(v)}</td>`).join("")}</tr>`}).join("");
   return `<div style="overflow-x:auto"><table class="cmpt"><thead><tr><th style="vertical-align:bottom">Chỉ tiêu</th>${S.map(x=>`<th class="r" style="color:var(${x.i.c});white-space:normal;vertical-align:bottom">${x.i.name}${x.i.id===cur?' ●':''}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table></div>`}
@@ -477,18 +502,32 @@ function evalHTML(ind,s,cl,pl){const A=s.acct,days={};cl.forEach((t,i)=>days[t.d
     <div><span class="lbl">Lot đã giao dịch</span><div class="v">${(cl.length*s.lots).toFixed(2)}</div></div>
     <div><span class="lbl">Ngày tốt nhất/tổng lãi</span><div class="v">${cons.toFixed(0)}%</div></div>
     <div><span class="lbl">Lợi nhuận % vốn</span><div class="v ${prof>=0?'up':'down'}">${(prof/A*100).toFixed(2)}%</div></div>
-   </div></div>`}
+   </div>${maeHTML(cl)}</div>`}
+// MAE dùng để chỉnh stop, MFE dùng để chỉnh target (tính bằng R, chỉ lệnh đã đóng có dữ liệu).
+function maeHTML(cl){const x=cl.filter(t=>t.maeR!=null&&t.mfeR!=null);if(!x.length)return`<span class="lbl">MAE / MFE</span><div class="empty" style="padding:8px 0">Chưa có lệnh đã đóng có dữ liệu MAE/MFE.</div>`;
+  const avg=a=>a.length?a.reduce((p,c)=>p+c,0)/a.length:null,W=x.filter(t=>t.R>0),Lz=x.filter(t=>t.R<=0),f=v=>v==null?"—":v.toFixed(2)+"R";
+  const q=(a,p)=>{if(!a.length)return null;const b=[...a].sort((m,n)=>m-n);return b[Math.min(b.length-1,Math.floor(p*b.length))]};
+  return `<span class="lbl">MAE / MFE · ${x.length} lệnh</span><div class="stats num">
+    <div><span class="lbl">MAE TB lệnh thắng</span><div class="v">${f(avg(W.map(t=>t.maeR)))}</div></div>
+    <div><span class="lbl">MAE 90% lệnh thắng</span><div class="v">${f(q(W.map(t=>t.maeR),.9))}</div></div>
+    <div><span class="lbl">MFE TB tất cả</span><div class="v">${f(avg(x.map(t=>t.mfeR)))}</div></div>
+    <div><span class="lbl">MFE TB lệnh thua</span><div class="v">${f(avg(Lz.map(t=>t.mfeR)))}</div></div>
+   </div><div class="note">MAE 90% lệnh thắng thấp hơn nhiều so với 1R thì có thể thu hẹp stop. MFE trung bình cao hơn target thì có thể nới target. Cần đủ nhiều lệnh mới kết luận được.</div>`}
 
-// Bảng xếp hạng mọi chiến lược tín hiệu của mã đang xem: lãi lỗ = lệnh đã đóng + lệnh đang mở (tạm tính theo giá cuối)
+// Bảng xếp hạng mọi chiến lược của mã đang xem, xếp theo R đã chốt (không nhảy theo lãi lỗ chưa chốt).
+// Dòng BASKET: rổ trung bình 14 chiến lược, chỉ để so sánh, không tham gia xếp hạng.
 function rankHTML(){const av=IND.filter(i=>assign[i.id]&&assign[i.id].includes(sym.root));if(!av.length)return"";
-  const RB0=RB[sym.id],lp=(QT[sym.id]&&QT[sym.id].c)||(RB0&&RB0.bars.length?RB0.bars[RB0.bars.length-1].c:sym.px),f=dp(sym.px);
-  const rows=av.map(i=>{const nm=LIVE&&SRV[i.id]?SRV[i.id].name:i.name,s=st(i.id),T=trades(i),pl=T.closed.map(t=>pnl(t,s)),cl=pl.reduce((a,b)=>a+b,0),act=T.live.filter(t=>t.st==="act"),fl=act.reduce((a,t)=>a+(lp-t.e)*t.dir*s.lots*s.size*sym.unit,0),pend=T.live.length-act.length,n=pl.length;
-    return{i,nm,tot:cl+fl,fl,act,pend,n,wr:n?pl.filter(v=>v>0).length/n*100:null}}).sort((a,b)=>b.tot-a.tot||b.act.length-a.act.length||b.n-a.n);
-  const nAct=rows.filter(r=>r.act.length).length;
-  return `<div class="rank"><div class="rank-h">Xếp hạng chiến lược · ${sym.root}<small>${rows.length} chiến lược · ${nAct} đang có lệnh · bấm để xem chi tiết</small></div>
-   <div class="rkw"><table class="rkt"><thead><tr><th style="width:30px">#</th><th>Chiến lược</th><th style="width:24%">Trạng thái</th><th class="r" style="width:32%">Lãi lỗ · WR</th><th style="width:16px"></th></tr></thead><tbody>${rows.map((r,k)=>{const a=r.act[0];
-    const stt=a?`<span class="pill ${a.dir>0?'p-buy':'p-sell'}">${a.dir>0?'Đang Mua':'Đang Bán'}</span><span class="sub num">từ ${Number(a.e).toFixed(f)} · ${usd(r.fl)}</span>`:r.pend?`<span class="pill p-pend">Chờ khớp</span>`:`<span class="muted">Chờ tín hiệu</span>`;
-    return `<tr class="${open.includes(r.i.id)?'cur':''}" data-rk="${r.i.id}"><td class="num muted">${k+1}</td><td class="nm" title="${esc(r.nm)}"><i style="background:var(${r.i.c})"></i>${esc(r.nm)}</td><td>${stt}</td><td class="r num ${r.tot>0?'up':r.tot<0?'down':'muted'}">${r.n||r.act.length?usd(r.tot):"—"}<span class="sub">${r.n?r.n+" lệnh · WR "+r.wr.toFixed(0)+"%":"0 lệnh"}</span></td><td class="go">›</td></tr>`}).join("")}</tbody></table></div></div>`}
+  const f=dp(sym.px),N=av.length;
+  const rows=av.map(i=>{const nm=LIVE&&SRV[i.id]?SRV[i.id].name:i.name,A=agg2(i);return{i,nm,...A}}).sort((a,b)=>b.cR-a.cR||b.n-a.n||b.oR-a.oR);
+  const nL=rows.filter(r=>r.act[0]&&r.act[0].dir>0).length,nS=rows.filter(r=>r.act[0]&&r.act[0].dir<0).length,nW=N-nL-nS,cons=(nL-nS)/N;
+  const sum=k=>rows.reduce((a,r)=>a+r[k],0),bk={cR:sum("cR")/N,oR:sum("oR")/N,cU:sum("cU")/N,oU:sum("oU")/N};bk.tR=bk.cR+bk.oR;bk.tU=bk.cU+bk.oU;
+  const pr=(R,U)=>`<span class="${R>0?'up':R<0?'down':'muted'}">${rr(R)}</span><span class="sub">${usd(U)}</span>`;
+  return `<div class="rank"><div class="rank-h">Xếp hạng chiến lược · ${sym.root}<small>${N} chiến lược · xếp theo R đã chốt (sau phí) · bấm để xem chi tiết</small></div>
+   <div class="cons"><span><b class="up">${nL}</b> mua · <b class="down">${nS}</b> bán · <b>${nW}</b> chờ</span><span>Đồng thuận <b class="${cons>0?'up':cons<0?'down':''}">${cons>0?'+':''}${(cons*100).toFixed(0)}%</b></span><span>Rổ ${cons===0?'đứng ngoài':(cons>0?'long ':'short ')+Math.abs(cons).toFixed(2)+' lot'}</span></div>
+   <div class="rkw"><table class="rkt"><thead><tr><th style="width:26px">#</th><th>Chiến lược</th><th style="width:25%">Đang mở</th><th class="r" style="width:22%">Đã chốt</th><th class="r" style="width:15%">WR</th><th style="width:14px"></th></tr></thead><tbody>${rows.map((r,k)=>{const a=r.act[0];
+    const stt=a?`<span class="pill ${a.dir>0?'p-buy':'p-sell'}">${a.dir>0?'Mua':'Bán'}</span><span class="sub num ${r.oR>0?'up':r.oR<0?'down':''}">${rr(r.oR)} · ${usd(r.oU)}</span>`:r.pend?`<span class="pill p-pend">Chờ khớp</span>`:`<span class="muted">Chờ tín hiệu</span>`;
+    return `<tr class="${open.includes(r.i.id)?'cur':''}" data-rk="${r.i.id}"><td class="num muted">${k+1}</td><td class="nm" title="${esc(r.nm)}"><i style="background:var(${r.i.c})"></i>${esc(r.nm)}</td><td>${stt}</td><td class="r num">${r.n?pr(r.cR,r.cU):'<span class="muted">—</span><span class="sub">0 lệnh đóng</span>'}</td><td class="r num">${r.wr==null?'<span class="muted">—</span>':r.wr.toFixed(0)+'%'}<span class="sub">${r.n}/${r.act.length}</span></td><td class="go">›</td></tr>`}).join("")}</tbody>
+   <tfoot><tr class="bsk"><td class="num muted">Σ</td><td class="nm">BASKET<span class="sub">TB ${N} chiến lược · không xếp hạng</span></td><td class="num">${pr(bk.oR,bk.oU)}</td><td class="r num">${pr(bk.cR,bk.cU)}</td><td class="r num" colspan="2">${pr(bk.tR,bk.tU)}</td></tr></tfoot></table></div></div>`}
 
 function renderCols(){const av=IND.filter(i=>assign[i.id].includes(sym.root));
   $("#cols").innerHTML=open.map(id=>colHTML(IND.find(i=>i.id===id))+`<div class="gut" data-cg="${id}" title="Kéo để chỉnh độ rộng cột"></div>`).join("");
@@ -500,7 +539,9 @@ function renderCols(){const av=IND.filter(i=>assign[i.id].includes(sym.root));
   document.querySelectorAll("[data-save]").forEach(b=>b.onclick=async()=>{const id=b.dataset.save,col=b.closest(".col"),params={},msg=$("#pmsg-"+id);col.querySelectorAll("[data-pk]").forEach(i=>params[i.dataset.pk]=Number(i.value));
     b.disabled=true;msg.textContent="Đang lưu...";try{const r=await api("/api/strategies",{method:"POST",body:JSON.stringify({strategy:id,symbol:sym.id,params})});st(id).ver=null;await loadStrategies(true);renderCols();renderCmp();drawChart();const m=$("#pmsg-"+id);if(m)m.textContent="Đã lưu, đang chạy bộ "+r.ver}catch(e){msg.textContent="Không lưu được: "+(e.message==="403"?"tài khoản chỉ xem":e.message);b.disabled=false}});
   document.querySelectorAll(".col").forEach(c=>{const id=c.dataset.id;c.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{st(id).tab=b.dataset.tab;renderCols()});
-    c.querySelectorAll("[data-k]").forEach(inp=>inp.onchange=()=>{const v=parseFloat(inp.value);if(v>0){st(id)[inp.dataset.k]=v;renderCols();renderCmp()}})});
+    c.querySelectorAll("[data-k]").forEach(inp=>inp.onchange=()=>{const v=parseFloat(inp.value);if(v>0){st(id)[inp.dataset.k]=v;renderCols();renderCmp()}});
+    c.querySelectorAll("[data-fee]").forEach(inp=>inp.onchange=async()=>{const v=parseFloat(inp.value),m=$("#fmsg-"+id);if(!(v>=0))return;m.textContent="Đang lưu...";
+      try{await api("/api/spec",{method:"POST",body:JSON.stringify({symbol:sym.id,fee:v})});SPEC[sym.id]=Object.assign({},SPEC[sym.id],{fee:v});renderCols();renderCmp();const m2=$("#fmsg-"+id);if(m2)m2.textContent="Đã lưu phí $"+v+" cho "+sym.root}catch(e){m.textContent="Không lưu được"}})});
   document.querySelectorAll("[data-cg]").forEach(g=>drag(g,"x",()=>g.previousElementSibling.getBoundingClientRect().width,w=>{w=Math.max(240,Math.min(900,w));L.colW[g.dataset.cg]=w;const c=g.previousElementSibling;c.style.flex=`0 0 ${w}px`;c.style.minWidth=w+"px";c.style.maxWidth="none"}));
   const ac=$("#addcol");if(ac)ac.onclick=()=>{const nx=av.find(i=>!open.includes(i.id));if(nx){open.push(nx.id);renderAll()}}}
 
@@ -759,7 +800,7 @@ function showRes(){const t=q.value.trim().toUpperCase(),m=SYM.filter(s=>!t||s.id
 q.onfocus=showRes;q.oninput=showRes;
 document.addEventListener("click",e=>{if(!e.target.closest(".search"))res.hidden=true;closeMenus()});
 
-function renderAll(){if(LIVE&&SRVsym!==sym.id)loadStrategies().then(()=>{renderPicker();renderCols();renderCmp()}).catch(()=>{});if(LIVE&&!RB[sym.id])loadBars(sym.id).then(()=>{loadQuotes().catch(()=>{}).then(renderWL);drawChart()}).catch(()=>{});$("#tvSym").textContent=sym.id;renderContract();renderWL();renderPicker();renderCols();renderCmp();drawChart();const rl=$("#resetLay");if(rl)rl.onclick=()=>{L={chartW:null,colW:{},paneH:null,termH:null};saveL();renderCols();applyLayout()}}
+function renderAll(){if(LIVE&&SIGsym!==sym.id)loadLog().then(renderCols).catch(()=>{});if(LIVE&&SRVsym!==sym.id)loadStrategies().then(()=>{renderPicker();renderCols();renderCmp()}).catch(()=>{});if(LIVE&&!RB[sym.id])loadBars(sym.id).then(()=>{loadQuotes().catch(()=>{}).then(renderWL);drawChart()}).catch(()=>{});$("#tvSym").textContent=sym.id;renderContract();renderWL();renderPicker();renderCols();renderCmp();drawChart();const rl=$("#resetLay");if(rl)rl.onclick=()=>{L={chartW:null,colW:{},paneH:null,termH:null};saveL();renderCols();applyLayout()}}
 addEventListener("resize",()=>{if(L.chartW)applyLayout();else drawChart()});
 function tick(){const t=new Intl.DateTimeFormat("vi-VN",{timeZone:"Asia/Ho_Chi_Minh",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date());$("#clock").innerHTML=t.replace(","," ")+"<small>GMT+7</small>"}
 tick();setInterval(tick,1000);
@@ -771,7 +812,7 @@ async function api(path,opt={}){const r=await fetch(API+path,Object.assign({},op
   if(r.status===401){tok.set(null);showLogin("Phiên đăng nhập đã hết, nhập lại mật khẩu.");throw new Error("401")}
   if(!r.ok)throw new Error((await r.json().catch(()=>({}))).error||("Lỗi máy chủ "+r.status));return r.json()}
 let pollT=null;
-async function refresh(){try{const d=await api("/api/trades?days=90");LIVE=d.trades||[];await Promise.all([loadQuotes(),loadBars(sym.id),loadStrategies(),loadXI()]).catch(()=>{});setMode("Live · cập nhật "+new Intl.DateTimeFormat("vi-VN",{timeZone:"Asia/Ho_Chi_Minh",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date()),"live");renderWL();renderPicker();renderCols();renderCmp();drawChart()}
+async function refresh(){try{const d=await api("/api/trades?days=90");LIVE=d.trades||[];await Promise.all([loadQuotes(),loadBars(sym.id),loadStrategies(),loadXI(),loadSpec(),loadLog()]).catch(()=>{});setMode("Live · cập nhật "+new Intl.DateTimeFormat("vi-VN",{timeZone:"Asia/Ho_Chi_Minh",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date()),"live");renderWL();renderPicker();renderCols();renderCmp();drawChart()}
   catch(e){if(e.message!=="401")setMode("Mất kết nối máy chủ","err")}}
 function startPoll(){$("#logoutBtn").hidden=false;clearInterval(pollT);refresh();pollT=setInterval(refresh,Math.max(5,+CFG.pollSeconds||10)*1000)}
 function showLogin(msg){$("#login").hidden=false;$("#logoutBtn").hidden=true;$("#loginMsg").textContent=msg||"";clearInterval(pollT);setTimeout(()=>$("#pw").focus(),0)}

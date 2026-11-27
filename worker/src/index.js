@@ -199,6 +199,63 @@ function aggregate(src, tf, end) {
   return out;
 }
 
+// ---------------- Quy đổi R, phí, nhật ký tín hiệu ----------------
+// Giá trị 1 đơn vị giá cho 1 lot, theo hợp đồng tiêu chuẩn CME (mã CFD quy về hợp đồng CME tương ứng).
+const PV = {
+  GC: 100, XAU: 100, SI: 5000, XAG: 5000, PL: 50, HG: 25000, CL: 1000, BRN: 1000,
+  ZC: 50, ZS: 50, ZW: 50, ZL: 600, ZM: 100, KC: 375, DXY: 1000,
+  BTC: 5, ETH: 50, US100: 20, NQ: 20, US500: 50, ES: 50,
+  EURUSD: 125000, GBPUSD: 62500, AUDUSD: 100000, NZDUSD: 100000,
+};
+const DEF_FEE = 40, ACCT = 100000, DAY_LIMIT = 0.05;
+function rootKey(symbol) {
+  let t = String(symbol || "").toUpperCase();
+  t = t.includes(":") ? t.split(":")[1] : t;
+  t = t.replace(/\.P$/, "").replace(/[12]!$/, "");
+  if (/^(XAU|XAG|BTC|ETH)/.test(t)) return t.slice(0, 3);
+  return t;
+}
+// Đô la cho 1 đơn vị giá, 1 lot. Cặp USD đứng trước (USDJPY…) đổi theo giá hiện tại.
+function pointValue(symbol, px) {
+  const k = rootKey(symbol);
+  if (PV[k]) return PV[k];
+  const m = k.match(/^USD(JPY|CHF|CAD)$/);
+  if (m && px > 0) return ({ JPY: 12500000, CHF: 125000, CAD: 100000 })[m[1]] / px;
+  return 1;
+}
+async function feeOf(env, symbol) {
+  const r = await env.DB.prepare(`SELECT fee FROM sym_cfg WHERE symbol = ?`).bind(symbol).first().catch(() => null);
+  return r && Number.isFinite(r.fee) ? r.fee : DEF_FEE;
+}
+// Ngày giao dịch tính từ 0:00 giờ Prague như FTMO.
+function pragueDayStart(ms) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Prague", hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    .formatToParts(new Date(ms)).map((x) => [x.type, x.value]));
+  const asUtc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+  const off = asUtc - Math.floor(ms / 1000) * 1000;
+  return Date.UTC(+p.year, +p.month - 1, +p.day) - off;
+}
+// Phiên theo giờ Việt Nam: Á 6h–14h, Âu 14h–19h, Mỹ 19h–4h.
+function sessionOf(ms) {
+  const h = new Date(ms + 7 * 3600000).getUTCHours();
+  return h >= 6 && h < 14 ? "Á" : h >= 14 && h < 19 ? "Âu" : h >= 19 || h < 4 ? "Mỹ" : "Ngoài giờ";
+}
+function adx(bars, n = 14) {
+  if (bars.length < n * 2 + 1) return null;
+  let tr = 0, pd = 0, md = 0, ax = null, dxs = [];
+  for (let i = 1; i < bars.length; i++) {
+    const b = bars[i], p = bars[i - 1], up = b.h - p.h, dn = p.l - b.l;
+    const t = Math.max(b.h - b.l, Math.abs(b.h - p.c), Math.abs(b.l - p.c));
+    const P = up > dn && up > 0 ? up : 0, M = dn > up && dn > 0 ? dn : 0;
+    if (i <= n) { tr += t; pd += P; md += M; if (i < n) continue; }
+    else { tr = tr - tr / n + t; pd = pd - pd / n + P; md = md - md / n + M; }
+    const pi = tr ? (100 * pd) / tr : 0, mi = tr ? (100 * md) / tr : 0, dx = pi + mi ? (100 * Math.abs(pi - mi)) / (pi + mi) : 0;
+    if (ax === null) { dxs.push(dx); if (dxs.length === n) ax = dxs.reduce((a, c) => a + c, 0) / n; }
+    else ax = (ax * (n - 1) + dx) / n;
+  }
+  return ax;
+}
+
 // Số nến khung lớn nạp cho chiến lược: mặc định 450, chiến lược cần lịch sử dài hơn khai báo hist(p).
 function histLimit(cfgs, tf) {
   let m = 450;
@@ -213,25 +270,50 @@ async function runEngine(env, symbol, rows) {
     `SELECT * FROM trades WHERE symbol = ? AND status = 'open' AND ver IS NOT NULL`
   ).bind(symbol).all();
 
-  // 1) Theo dõi SL / TP / hòa vốn trên từng nến 1 phút.
+  // 1) Theo dõi SL / TP / hòa vốn, MAE/MFE và giới hạn lỗ ngày trên từng nến 1 phút.
+  const lastPx = rows[rows.length - 1][4], fee = await feeOf(env, symbol), pvNow = pointValue(symbol, lastPx);
+  const day0 = pragueDayStart(rows[rows.length - 1][0]), dayPl = {};
+  const { results: dr } = await env.DB.prepare(
+    `SELECT strategy, SUM((exit_price - entry) * (CASE side WHEN 'buy' THEN 1 ELSE -1 END) * COALESCE(pv, ?) - COALESCE(fee, ?)) pl
+     FROM trades WHERE symbol = ? AND status = 'closed' AND ver IS NOT NULL AND closed_at >= ? GROUP BY strategy`
+  ).bind(pvNow, fee, symbol, day0).all();
+  for (const r of dr) dayPl[r.strategy] = r.pl || 0;
+  const lim = ACCT * DAY_LIMIT;
   for (const t of open) {
-    const meta = JSON.parse(t.meta || "{}"), buy = t.side === "buy";
-    let sl = t.sl;
+    const meta = JSON.parse(t.meta || "{}"), buy = t.side === "buy", dir = buy ? 1 : -1;
+    const pv = t.pv || pvNow, tf = t.fee != null ? t.fee : fee;
+    let sl = t.sl, mae = t.mae || 0, mfe = t.mfe || 0;
+    // Giá mà tại đó lỗ trong ngày (đã chốt + đang mở, sau phí) chạm 5% vốn.
+    const limPx = t.entry - dir * (lim + (dayPl[t.strategy] || 0) - tf) / pv;
     for (const [bt, , h, l] of rows) {
       if (bt < t.opened_at) continue;
       const hitSL = sl !== null && (buy ? l <= sl : h >= sl), hitTP = t.tp !== null && (buy ? h >= t.tp : l <= t.tp);
-      if (hitSL || hitTP) {
-        ops.push(env.DB.prepare(`UPDATE trades SET status = 'closed', exit_price = ?, result = ?, closed_at = ?, sl = ? WHERE id = ? AND status = 'open'`)
-          .bind(hitSL ? sl : t.tp, hitSL ? "sl" : "tp", bt + 60000, sl, t.id));
-        t.closed = true; notes.push(t.strategy + ":" + (hitSL ? "sl" : "tp"));
+      const hitDL = buy ? l <= limPx : h >= limPx;
+      const advX = buy ? t.entry - l : h - t.entry, favX = buy ? h - t.entry : t.entry - l;
+      if (hitSL || hitTP || hitDL) {
+        // Nến chạm mức: ưu tiên SL, rồi giới hạn ngày (nếu tới trước SL), rồi TP.
+        const slDist = sl !== null ? (t.entry - sl) * dir : Infinity, dlDist = (t.entry - limPx) * dir;
+        let res, px;
+        if (hitDL && (!hitSL || dlDist < slDist)) { res = "dl"; px = limPx; }
+        else if (hitSL) { res = "sl"; px = sl; }
+        else { res = "tp"; px = t.tp; }
+        // Nến đóng lệnh: đi ngược tối đa tới giá thoát (SL / giới hạn ngày), đi thuận tối đa tới TP.
+        if (res === "tp") mfe = Math.max(mfe, (t.tp - t.entry) * dir);
+        else { mae = Math.max(mae, Math.min(advX, (t.entry - px) * dir)); mfe = Math.max(mfe, favX); }
+        ops.push(env.DB.prepare(`UPDATE trades SET status = 'closed', exit_price = ?, result = ?, closed_at = ?, sl = ?, mae = ?, mfe = ? WHERE id = ? AND status = 'open'`)
+          .bind(px, res, bt + 60000, sl, mae, mfe, t.id));
+        t.closed = true; notes.push(t.strategy + ":" + res);
+        dayPl[t.strategy] = (dayPl[t.strategy] || 0) + (px - t.entry) * dir * pv - tf;
         break;
       }
+      mae = Math.max(mae, advX); mfe = Math.max(mfe, favX);
       const beLvl = meta.beAt != null ? meta.beAt : meta.risk ? (buy ? t.entry + meta.risk : t.entry - meta.risk) : null;
       if (meta.be && !meta.moved && beLvl != null && (buy ? h >= beLvl : l <= beLvl)) {
         sl = t.entry; meta.moved = 1;
         ops.push(env.DB.prepare(`UPDATE trades SET sl = ?, meta = ? WHERE id = ?`).bind(sl, JSON.stringify(meta), t.id));
       }
     }
+    if (!t.closed && (mae !== (t.mae || 0) || mfe !== (t.mfe || 0))) ops.push(env.DB.prepare(`UPDATE trades SET mae = ?, mfe = ? WHERE id = ?`).bind(mae, mfe, t.id));
     t.sl = sl;
   }
 
@@ -263,6 +345,7 @@ async function runEngine(env, symbol, rows) {
     if (!src1) src1 = (await env.DB.prepare(`SELECT t, o, h, l, c, v FROM bars WHERE symbol = ? AND t >= ? AND t < ? ORDER BY t`).bind(symbol, end - 10 * 86400000, end).all()).results;
     return src1;
   };
+  let ctx = null;
   for (const tf of closing) {
     const { results } = await env.DB.prepare(`SELECT t, o, h, l, c, v FROM tfbars WHERE symbol = ? AND tf = ? ORDER BY t DESC LIMIT ?`).bind(symbol, tf, histLimit(cfgs, tf)).all();
     const bars = results.reverse();
@@ -278,6 +361,7 @@ async function runEngine(env, symbol, rows) {
         const buy = cur.side === "buy";
         if ((buy && (out.exitBuy || out.entry?.side === "sell")) || (!buy && (out.exitSell || out.entry?.side === "buy"))) {
           ops.push(env.DB.prepare(`UPDATE trades SET status = 'closed', exit_price = ?, result = 'exit', closed_at = ? WHERE id = ? AND status = 'open'`).bind(px, end, cur.id));
+          dayPl[c.id] = (dayPl[c.id] || 0) + (px - cur.entry) * (buy ? 1 : -1) * (cur.pv || pvNow) - (cur.fee != null ? cur.fee : fee);
           cur.closed = true; cur = null; notes.push(c.id + ":exit");
         }
       }
@@ -285,14 +369,31 @@ async function runEngine(env, symbol, rows) {
       if (!cur && e && Number.isFinite(e.sl) && Number.isFinite(e.tp) && (e.side === "buy" ? e.sl < px && e.tp > px : e.sl > px && e.tp < px)) {
         const meta = { be: out.be ? 1 : 0, risk: Math.abs(px - e.sl) };
         if (e.beAt != null && Number.isFinite(e.beAt)) meta.beAt = e.beAt;
+        const pv = pointValue(symbol, px);
+        // Bối cảnh lúc phát: phiên + trạng thái thị trường theo ADX14 khung H1 (ghi ngay, không gắn lại sau).
+        if (!ctx) {
+          const { results: h1 } = await env.DB.prepare(`SELECT t, o, h, l, c FROM tfbars WHERE symbol = ? AND tf = 60 AND t < ? ORDER BY t DESC LIMIT 150`).bind(symbol, end).all();
+          const a = adx(h1.reverse());
+          ctx = { adx: a, regime: a == null ? null : a > 25 ? "Xu hướng" : "Đi ngang" };
+        }
+        // Giới hạn lỗ 5%/ngày tính riêng từng chiến lược: đã chạm thì tín hiệu vẫn ghi log nhưng không vào lệnh.
+        const blocked = (dayPl[c.id] || 0) <= -ACCT * DAY_LIMIT ? 1 : 0;
+        if (!blocked) {
+          ops.push(env.DB.prepare(
+            `INSERT INTO trades (ext_id, strategy, symbol, side, status, entry, sl, tp, created_at, opened_at, ver, meta, fee, pv, mae, mfe)
+             SELECT NULL, ?, ?, ?, 'open', ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0
+             WHERE NOT EXISTS (SELECT 1 FROM trades WHERE strategy = ? AND symbol = ? AND created_at = ?)`
+          ).bind(c.id, symbol, e.side, px, e.sl, e.tp, end, end, c.ver, JSON.stringify(meta), fee, pv, c.id, symbol, end));
+        }
         ops.push(env.DB.prepare(
-          `INSERT INTO trades (ext_id, strategy, symbol, side, status, entry, sl, tp, created_at, opened_at, ver, meta)
-           SELECT NULL, ?, ?, ?, 'open', ?, ?, ?, ?, ?, ?, ?
-           WHERE NOT EXISTS (SELECT 1 FROM trades WHERE strategy = ? AND symbol = ? AND created_at = ?)`
-        ).bind(c.id, symbol, e.side, px, e.sl, e.tp, end, end, c.ver, JSON.stringify(meta), c.id, symbol, end));
+          `INSERT INTO siglog (t, symbol, strategy, ver, side, entry, sl, tp, risk, pv, fee, session, regime, adx, blocked, trade_id)
+           SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT id FROM trades WHERE strategy = ? AND symbol = ? AND created_at = ? AND ? = 0)
+           WHERE NOT EXISTS (SELECT 1 FROM siglog WHERE strategy = ? AND symbol = ? AND t = ?)`
+        ).bind(end, symbol, c.id, c.ver, e.side, px, e.sl, e.tp, meta.risk, pv, fee, sessionOf(end), ctx.regime, ctx.adx, blocked,
+          c.id, symbol, end, blocked, c.id, symbol, end));
         ops.push(env.DB.prepare(`INSERT OR IGNORE INTO strat_vers (strategy, symbol, ver, params, created_at) VALUES (?, ?, ?, ?, ?)`)
           .bind(c.id, symbol, c.ver, JSON.stringify(c.p), Date.now()));
-        notes.push(c.id + ":" + e.side);
+        notes.push(c.id + ":" + e.side + (blocked ? ":blocked" : ""));
       }
     }
   }
@@ -353,10 +454,41 @@ export default {
         const days = Math.min(365, Math.max(1, Number(url.searchParams.get("days")) || 90));
         const since = Date.now() - days * 24 * 3600 * 1000;
         const { results } = await env.DB.prepare(
-          `SELECT id, strategy, symbol, side, status, entry, sl, tp, exit_price, result, created_at, opened_at, closed_at, ver
+          `SELECT id, strategy, symbol, side, status, entry, sl, tp, exit_price, result, created_at, opened_at, closed_at, ver,
+             json_extract(meta, '$.risk') risk, fee, pv, mae, mfe
            FROM trades WHERE created_at >= ? OR status IN ('open', 'pending') ORDER BY id`
         ).bind(since).all();
         return json({ trades: results }, 200, cors);
+      }
+
+      // Nhật ký tín hiệu bất biến (chỉ ghi thêm, không sửa, không xóa).
+      if (url.pathname === "/api/siglog" && req.method === "GET") {
+        if (!(await isAuthed(env, req))) return json({ error: "Cần đăng nhập" }, 401, cors);
+        const symbol = String(url.searchParams.get("symbol") || "").toUpperCase();
+        const { results } = await env.DB.prepare(
+          `SELECT id, t, symbol, strategy, ver, side, entry, sl, tp, risk, pv, fee, session, regime, adx, blocked, trade_id
+           FROM siglog WHERE (? = '' OR symbol = ?) ORDER BY id DESC LIMIT 2000`
+        ).bind(symbol, symbol).all();
+        return json({ log: results }, 200, cors);
+      }
+
+      // Giá trị 1 điểm (hợp đồng CME) và phí mỗi lệnh của từng mã. Chỉ quản trị đổi được phí.
+      if (url.pathname === "/api/spec" && req.method === "GET") {
+        if (!(await isAuthed(env, req))) return json({ error: "Cần đăng nhập" }, 401, cors);
+        const { results: q } = await env.DB.prepare(`SELECT symbol, c FROM quotes`).all();
+        const { results: f } = await env.DB.prepare(`SELECT symbol, fee FROM sym_cfg`).all();
+        const fees = Object.fromEntries(f.map((r) => [r.symbol, r.fee])), spec = {};
+        for (const r of q) spec[r.symbol] = { pv: pointValue(r.symbol, r.c), fee: fees[r.symbol] ?? DEF_FEE };
+        return json({ spec, defFee: DEF_FEE, acct: ACCT, dayLimit: DAY_LIMIT }, 200, cors);
+      }
+      if (url.pathname === "/api/spec" && req.method === "POST") {
+        const role = await isAuthed(env, req);
+        if (role !== "admin") return json({ error: "Chỉ quản trị mới được chỉnh phí" }, 403, cors);
+        const b = await req.json().catch(() => ({}));
+        const symbol = String(b.symbol || "").toUpperCase(), fee = Number(b.fee);
+        if (!symbol || !Number.isFinite(fee) || fee < 0 || fee > 10000) return json({ error: "Phí không hợp lệ" }, 400, cors);
+        await env.DB.prepare(`INSERT INTO sym_cfg (symbol, fee) VALUES (?, ?) ON CONFLICT(symbol) DO UPDATE SET fee = excluded.fee`).bind(symbol, fee).run();
+        return json({ ok: true, symbol, fee }, 200, cors);
       }
 
       if (url.pathname === "/api/bars" && req.method === "GET") {
